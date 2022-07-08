@@ -40,7 +40,6 @@ describe("Uploading a valid file", () => {
         {code: "0001", description:	"Date", value: "25/07/2013"},
         {code: "0002", description: "Type", value: "Complex, Hunter"},
         {code: "0003", description: "Patient ID", value: "123455"},
-        {code: "0004", description: "DOB", value: "15/12/1922"},
     ]
 
     test.each(testCases)('should contain the value for code %p', function ({code, description, value}) {
