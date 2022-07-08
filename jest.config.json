@@ -1,0 +1,11 @@
+{
+    "moduleFileExtensions": [
+        "js"
+    ],
+    "testMatch": [
+        "**/*.test.+(js)"
+    ],
+    "transform": {
+        "^.+\\.(ts|js|tsx|jsx)$": "@swc/jest"
+    }
+}

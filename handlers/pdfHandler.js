@@ -28,10 +28,11 @@ const extractRelevantData = async (pageData) => {
         }
     ]
 }
-export const singlePDFHandler = async (req, res) => {
+
+export const pdfHandler = async (req, res) => {
     try {
         if (!req.files) {
-            res.send({
+            res.status(400).json({
                 status: false,
                 message: 'No file uploaded'
             });
