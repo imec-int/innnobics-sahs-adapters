@@ -1,0 +1,24 @@
+<form action="/resmed/pdf-parse" method="POST" enctype="multipart/form-data">
+    <input type="file" class="filepond" name="pdf">
+    <button type="submit">Submit</button>
+</form>
+
+{{#if parsed }}
+Parsing result:
+
+<table>
+{{#each values}}
+    <tr>
+        <td>{{this.label}}</td>
+        <td>{{this.value}}</td>
+    </tr>
+{{/each}}
+</table>
+{{/if }}
+
+<!--<script src="https://unpkg.com/filepond/dist/filepond.js"></script>-->
+
+<!-- Turn all file input elements into ponds -->
+<script>
+    // FilePond.parse(document.body);
+</script>
