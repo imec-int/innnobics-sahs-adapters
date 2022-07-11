@@ -178,20 +178,9 @@ const extractTextContent = async (doc) => {
   return allItems.filter(R.complement(emptySpaceEntry));
 };
 
-const pdfDocumentParser = (res) => (doc) => {
-  extractTextContent(doc)
-    .then(extractRelevantData)
-    .then((data) => {
-      res.send({
-        status: true,
-        message: 'File is uploaded',
-        data,
-      });
-    }).catch((e) => {
-      console.error(e);
-      res.status(500).send('Failed to extract data from the PDF');
-    });
-};
+const parsePdfFile = (file) => pdfJs.getDocument(file).promise
+  .then(extractTextContent)
+  .then(extractRelevantData);
 
 const pdfHandler = async (req, res) => {
   if (!req.files) {
@@ -202,13 +191,20 @@ const pdfHandler = async (req, res) => {
   } else {
     const pdfFile = req.files.pdf;
 
-    const parsePdfDocument = pdfDocumentParser(res);
-    pdfJs.getDocument(pdfFile).promise
-      .then(parsePdfDocument)
+    parsePdfFile(pdfFile).then((data) => {
+      res.send({
+        status: true,
+        message: 'File is uploaded',
+        data,
+      });
+    }).catch((e) => {
+      console.error(e);
+      res.status(500).send('Failed to extract data from the PDF');
+    })
       .catch((err) => {
         res.status(500).send(err);
       });
   }
 };
 
-module.exports = pdfHandler;
+module.exports = { pdfHandler, parsePdfFile };

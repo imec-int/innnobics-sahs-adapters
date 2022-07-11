@@ -3,7 +3,7 @@ const supertest = require('supertest');
 const fileUpload = require('express-fileupload');
 const path = require('path');
 const Routes = require('./routes.js');
-const pdfHandler = require('./pdfHandler.js');
+const { pdfHandler } = require('./pdfHandler.js');
 
 const app = express();
 app.use(fileUpload({

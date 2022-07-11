@@ -1,5 +1,5 @@
-const Routes = {
-  PARSE_PDF: '/parse-pdf',
+const API = {
+  PARSE_PDF: '/api/pdf',
 };
 
-module.exports = Routes;
+module.exports = API;

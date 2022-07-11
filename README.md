@@ -9,5 +9,6 @@ We use [nvm](https://github.com/nvm-sh/nvm) to ensure we develop against the cor
 ```
 nvm use
 npm install
+cd src
 node index.js
 ```
