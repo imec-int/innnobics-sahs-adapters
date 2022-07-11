@@ -34,5 +34,5 @@ app.post('/', async (req, res) => {
   res.status(200).render('index', { values: data, filename: pdf.name });
 });
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 8080;
 app.listen(port, () => console.log(`App is listening on port ${port}.`));

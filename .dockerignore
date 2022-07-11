@@ -1,0 +1,10 @@
+node_modules/
+coverage/
+.idea/
+*.pdf
+**/*.test.js
+.eslint*
+.gitignore
+.nvmrc
+jest.config.json
+README.md
