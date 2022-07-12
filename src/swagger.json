@@ -1,0 +1,93 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "This is a API that extracts relevant data from a ResMed Airview generated PDF file. See https://www.resmed.com.au/healthcare-professionals/products/monitoring-and-data-management/airview-patient-management-system for more information about AirView",
+    "version": "1.0.0",
+    "title": "Innobics-Sahs adapters",
+    "contact": {
+      "email": "koen.ongena@imec.be"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  },
+  "schemes": [
+    "http"
+  ],
+  "basePath": "/",
+  "host": "localhost:8080",
+  "paths": {
+    "/api/pdf": {
+      "post": {
+        "summary": "Uploads a PDF and returns the extracted relevant data",
+        "description": "",
+        "operationId": "uploadPdf",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "pdf",
+            "in": "formData",
+            "description": "PDF file to parse",
+            "required": true,
+            "type": "file"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/PdfParseResponse"
+            }
+          }
+        },
+        "security": []
+      }
+    }
+  },
+  "definitions": {
+    "ParsedEntry": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "A code assigned to the field extracted from the PDF. For example 'Supine AI' has code '0504'"
+        },
+        "name": {
+          "type": "string",
+          "description": "The english name of the field extracted from the PDF"
+        },
+        "value": {
+          "description": "The raw, unparsed string value.",
+          "type": "string"
+        }
+      }
+    },
+    "PdfParseResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "boolean"
+        },
+        "message": {
+          "type": "string"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ParsedEntry"
+          }
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "description": "Find out more about Swagger",
+    "url": "http://swagger.io"
+  }
+}
