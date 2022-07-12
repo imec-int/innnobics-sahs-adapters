@@ -2,18 +2,18 @@ const express = require('express');
 const supertest = require('supertest');
 const fileUpload = require('express-fileupload');
 const path = require('path');
-const Routes = require('./routes.js');
 const { pdfHandler } = require('./pdfHandler.js');
 
+const URL = '/api/pdf';
 const app = express();
 app.use(fileUpload({
   createParentPath: true,
 }));
-app.post(Routes.PARSE_PDF, pdfHandler);
+app.post(URL, pdfHandler);
 
 describe('Not uploading a PDF file', () => {
   it('should return a http status 400', async () => {
-    const response = await supertest(app).post(Routes.PARSE_PDF);
+    const response = await supertest(app).post(URL);
 
     expect(response.status).toEqual(400);
     expect(response.body).toEqual({ status: false, message: 'No file uploaded' });
@@ -27,7 +27,7 @@ describe('Uploading a valid file', () => {
 
   beforeAll(async () => {
     response = await supertest(app)
-      .post(Routes.PARSE_PDF)
+      .post(URL)
       .attach('pdf', SAMPLE_PDF);
   });
 

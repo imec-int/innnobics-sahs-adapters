@@ -4,36 +4,37 @@ const cors = require('cors');
 const express = require('express');
 const { engine } = require('express-handlebars');
 const path = require('path');
-const Routes = require('./handlers/routes.js');
-const { parsePdfFile, pdfHandler } = require('./handlers/pdfHandler');
+const swaggerUi = require('swagger-ui-express');
+const { pdfHandler } = require('./handlers/pdfHandler');
+const homeViewHandler = require('./handlers/homeViewHandler');
 
+/** *****************
+ * Express setup
+ ****************** */
 const app = express();
-
-// enable files upload
 app.use(fileUpload({
   createParentPath: true,
 }));
-
 app.use(cors());
 app.use(morgan('dev')); // logging HTTP call
-
-// endpoints
-app.post(Routes.PARSE_PDF, pdfHandler);
+app.use(
+  '/api/docs',
+  swaggerUi.serve, // enable swagger documentation
+  swaggerUi.setup(require('./swagger.json')),
+);
 
 app.engine('handlebars', engine());
 app.set('view engine', 'handlebars');
 app.set('views', (path.join(__dirname, './views')));
 
-app.get('/', async (req, res) => {
-  res.render('index');
-});
+/** *****************
+ * Endpoint
+ ****************** */
 
-app.post('/', async (req, res) => {
-  const { pdf } = req.files;
-  const data = await parsePdfFile(pdf);
+app.post('/api/pdf', pdfHandler);
 
-  res.status(200).render('index', { values: data, filename: pdf.name });
-});
+app.get('/', homeViewHandler.get);
+app.post('/', homeViewHandler.post);
 
 const port = process.env.PORT || 8080;
 app.listen(port, () => console.log(`App is listening on port ${port}.`));
