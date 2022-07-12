@@ -1,6 +1,13 @@
 # innnobics-sahs-adapters
 
-# Development
+## Installation
+
+### From source
+
+1. Clone this repository
+2. 
+
+## Development
 
 This web application is written in javascript.
 
