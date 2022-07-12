@@ -1,4 +1,6 @@
-# innnobics-sahs-adapters
+# Innnobics-sahs-adapters
+
+A REST API, used to extract data from ResMed Airview generated PDF files.  
 
 ## Installation
 
