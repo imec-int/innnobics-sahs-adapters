@@ -6,11 +6,11 @@
 
 Running the latest published version of this service:
 
-`docker run -p 80:80 ghcr.io/imec-int/innnobics-sahs-adapters:latest`
+`docker run -p 8080:8080 ghcr.io/imec-int/innnobics-sahs-adapters:latest`
 
 If you wish to use a specific version, reference another tag (eg 'latest')
 
-`docker run -p 80:80 ghcr.io/imec-int/innnobics-sahs-adapters:v1.0.0`
+`docker run -p 8080:8080 ghcr.io/imec-int/innnobics-sahs-adapters:v1.0.0`
 
 The application will be available at `http://localhost:8080`
 
