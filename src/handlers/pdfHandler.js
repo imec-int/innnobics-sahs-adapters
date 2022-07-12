@@ -31,9 +31,10 @@ const concatUntilEndOfPage = (index) => concatUntil((item) => R.trim(item.str).s
 
 const takeSecondPartOfString = (index) => (arr) => R.pipe(
   take(index),
-  R.prop('str'),
+  R.propOr('', 'str'),
   R.split(':'),
   R.nth(1),
+  R.defaultTo(''), // in case nothing is found, use a blank string
   R.trim,
 )(arr);
 
@@ -46,6 +47,10 @@ const template = (code, name, valueFn) => (items) => ({
 const extractHorizontalFields = (blockLabel, nextBlockLabel) => (items) => {
   const blockLabelItem = items.find((item) => item.str === blockLabel);
   const nextBlockLabelItem = items.find((item) => item.str === nextBlockLabel);
+
+  if (!blockLabelItem || !nextBlockLabelItem) {
+    return {};
+  }
 
   const sortTopToBottom = (i1, i2) => Math.round(i2.transform[5]) - Math.round(i1.transform[5]);
   const sortLeftToRight = (i1, i2) => i1.transform[4] - i2.transform[4];
@@ -92,10 +97,13 @@ const oxygenSaturationEevalTimePercentage = horizontalRowField('Oxygen saturatio
 const breaths = horizontalRowField('Breaths', 'Pulse - bpm');
 const analysisGuidelines = horizontalRowField('Pulse - bpm', 'Analysis guidelines:');
 
+const PATIENT_ID_INDEX = 8;
+const PATIENT_ID_CODE = '0003';
+
 const extractRelevantData = async (items) => [
   template('0001', 'Date', takeStr(0)),
   template('0002', 'Type', takeStr(1)),
-  template('0003', 'Patient ID', takeSecondPartOfString(8)),
+  template(PATIENT_ID_CODE, 'Patient ID', takeSecondPartOfString(PATIENT_ID_INDEX)),
   template('0004', 'DOB', takeSecondPartOfString(9)),
   template('0005', 'Age', takeSecondPartOfString(10)),
   template('0006', 'Gender', takeSecondPartOfString(11)),
@@ -156,7 +164,6 @@ const extractRelevantData = async (items) => [
   template('1500', 'Analysis guidelines', takeStr(228)),
   template('1600', 'Adicional data', concatUntilEndOfPage(229)),
   template('1700', 'Interpretation', concatUntilEndOfPage(249)),
-
 ].map((fn) => fn(items));
 
 const extractTextContent = async (doc) => {
@@ -178,9 +185,16 @@ const extractTextContent = async (doc) => {
   return allItems.filter(R.complement(emptySpaceEntry));
 };
 
+const validateExtractedData = (result) => {
+  // if the patient ID code could not be extracted, this
+  const patientId = result.find((e) => e.code === PATIENT_ID_CODE);
+  return patientId.value ? result : undefined;
+};
+
 const parsePdfFile = (file) => pdfJs.getDocument(file).promise
   .then(extractTextContent)
-  .then(extractRelevantData);
+  .then(extractRelevantData)
+  .then(validateExtractedData);
 
 const pdfHandler = async (req, res) => {
   if (!req.files) {
@@ -192,18 +206,18 @@ const pdfHandler = async (req, res) => {
     const pdfFile = req.files.pdf;
 
     parsePdfFile(pdfFile).then((data) => {
-      res.send({
-        status: true,
-        message: 'File is uploaded',
-        data,
-      });
-    }).catch((e) => {
-      console.error(e);
-      res.status(500).send('Failed to extract data from the PDF');
-    })
-      .catch((err) => {
-        res.status(500).send(err);
-      });
+      if (data) {
+        res.send({
+          message: 'Data extracted successfully',
+          data,
+        });
+      } else {
+        res.status(400).send('Unable to extract relevant data');
+      }
+    }).catch((err) => {
+      console.error(err);
+      res.status(500).send(err);
+    });
   }
 };
 

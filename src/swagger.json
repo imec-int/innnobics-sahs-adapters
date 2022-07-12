@@ -44,6 +44,12 @@
             "schema": {
               "$ref": "#/definitions/PdfParseResponse"
             }
+          },
+          "500": {
+            "description": "Internal server error."
+          },
+          "400": {
+            "description": "The service is not able to parse the PDF. Possible reasons: a corrupt or invalid PDF was uploaded. A file is also considered invalid, if the pdf does not contain a patient ID (or the patient ID could not be found)."
           }
         },
         "security": []
@@ -71,9 +77,6 @@
     "PdfParseResponse": {
       "type": "object",
       "properties": {
-        "status": {
-          "type": "boolean"
-        },
         "message": {
           "type": "string"
         },

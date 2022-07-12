@@ -110,3 +110,18 @@ describe('Uploading a valid file', () => {
     expect(entry.value).toBe(value);
   });
 });
+
+describe('Uploading a bogus PDF file', () => {
+  test('should respond with a HTTP status 400', async () => {
+    // given
+    const WRONG_PDF = path.join(__dirname, 'bogus.pdf');
+
+    // when
+    const response = await supertest(app)
+      .post(URL)
+      .attach('pdf', WRONG_PDF);
+
+    // then
+    expect(response.status).toBe(400);
+  });
+});
