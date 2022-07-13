@@ -19,7 +19,8 @@ app.use(
   '/api/docs',
   swaggerUi.serve, // enable swagger documentation
   swaggerUi.setup(require('./swagger.json')),
-);
+); 
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.engine('handlebars', engine());
 app.set('view engine', 'handlebars');
