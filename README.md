@@ -49,5 +49,5 @@ We suggest using [nvm](https://github.com/nvm-sh/nvm) to ensure working with the
 ```
 nvm use
 npm install
-node src/index.js
+npm run dev
 ```
