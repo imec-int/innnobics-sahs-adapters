@@ -12,16 +12,15 @@ const homeViewHandler = require('./handlers/homeViewHandler');
  * Express setup
  ****************** */
 const app = express();
-app.use(fileUpload({
-  createParentPath: true,
-}));
+app.use(fileUpload());
 app.use(cors());
 app.use(morgan('dev')); // logging HTTP call
 app.use(
   '/api/docs',
   swaggerUi.serve, // enable swagger documentation
   swaggerUi.setup(require('./swagger.json')),
-);
+); 
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.engine('handlebars', engine());
 app.set('view engine', 'handlebars');

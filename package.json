@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "dev": "node src/index.js"
+    "dev": "nodemon src/index.js"
   },
   "author": "",
   "license": "ISC",
@@ -26,6 +26,7 @@
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.26.0",
     "jest": "^28.1.2",
+    "nodemon": "^2.0.19",
     "supertest": "^6.2.4"
   }
 }
