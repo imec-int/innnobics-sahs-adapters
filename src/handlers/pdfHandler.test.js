@@ -51,6 +51,9 @@ describe('Uploading a valid file', () => {
     { code: '0201', description: 'Monitoring time (flow) Start ', value: '10:37pm' },
     { code: '0202', description: 'Monitoring time (flow) End ', value: '6:08am' },
     { code: '0203', description: 'Monitoring time (flow) Duration - hr', value: '06:44' },
+    { code: '0204', description: 'Flow evaluation Start', value: undefined },
+    { code: '0205', description: 'Flow evaluation End', value: undefined },
+    { code: '0206', description: 'Flow evaluation Duration - hr', value: undefined },
     { code: '0301', description: 'Oxygen saturation evaluation Start ', value: '10:37pm' },
     { code: '0302', description: 'Oxygen saturation evaluation End ', value: '6:10am' },
     { code: '0303', description: 'Oxygen saturation evaluation Duration - hr', value: '07:32' },
@@ -103,6 +106,38 @@ describe('Uploading a valid file', () => {
 
   test.each(testCases)('should contain the value for code %p', ({ code, description, value }) => {
     const entry = response.body?.data?.find((e) => e.code === code);
+
+    expect(entry).toBeDefined();
+    expect(entry.code).toBe(code);
+    expect(entry.name).toBe(description);
+    expect(entry.value).toBe(value);
+  });
+});
+
+describe('Upload another valid, but unsigned file', () => {
+  const UNSIGNED_PDF = path.join(__dirname, 'Diagnostic_report_20220429_041628.pdf');
+
+  let unsignedResponse;
+
+  beforeAll(async () => {
+    unsignedResponse = await supertest(app)
+      .post(URL)
+      .attach('pdf', UNSIGNED_PDF);
+  });
+
+  const unsignedTestCases = [
+    { code: '0002', description: 'Type', value: 'Complex, Fieldman' },
+    { code: '0008', description: 'Recording details', value: '25/07/2013' },
+    { code: '0201', description: 'Monitoring time (flow) Start ', value: undefined },
+    { code: '0202', description: 'Monitoring time (flow) End ', value: undefined },
+    { code: '0203', description: 'Monitoring time (flow) Duration - hr', value: undefined },
+    { code: '0204', description: 'Flow evaluation Start', value: '10:37pm' },
+    { code: '0205', description: 'Flow evaluation End', value: '6:08am' },
+    { code: '0206', description: 'Flow evaluation Duration - hr', value: '06:44' },
+  ];
+
+  test.each(unsignedTestCases)('should contain the value for code %p', ({ code, description, value }) => {
+    const entry = unsignedResponse.body?.data?.find((e) => e.code === code);
 
     expect(entry).toBeDefined();
     expect(entry.code).toBe(code);
