@@ -5,6 +5,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
+const logger = require('../tools/logger');
 
 const emptySpaceEntry = (item) => item.width === 0 && item.height === 0;
 
@@ -210,6 +211,7 @@ const extractRelevantData = async (allItems) => {
 };
 
 const extractTextContent = async (doc) => {
+  logger.debug('Extracting text content');
   const extractTextContentStartingFromPage = async (pageNumber) => {
     if (pageNumber > doc.numPages) {
       return [];
@@ -251,7 +253,7 @@ const extractFile = (req) => {
   const buffer = Buffer.from(req.body.pdf, 'base64');
   const tempPdfFilePath = tmpFile();
 
-  console.log('Saving base64 uploaded pdf file to file path', tempPdfFilePath);
+  logger.debug('Saving base64 uploaded pdf file to file path %s', tempPdfFilePath);
 
   fs.writeFileSync(tempPdfFilePath, buffer);
   return tempPdfFilePath;
@@ -276,7 +278,7 @@ const pdfHandler = async (req, res) => {
         res.status(400).send('Unable to extract relevant data');
       }
     }).catch((err) => {
-      console.error(err);
+      logger.error(err);
       res.status(500).send(err);
     });
   }

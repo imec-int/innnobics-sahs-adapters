@@ -40,6 +40,26 @@ We provide [Swagger](https://swagger.io/) documentation. To validate and test th
 1. start the application: `docker run -p 8080:8080 ghcr.io/imec-int/innnobics-sahs-adapters:latest`. We use docker for this. See above for alternative methods
 2. Access the documentation on `http://localhost:8080/api/docs`
 
+## Logging
+
+Warning and errors are logged to the console in JSON format.
+You can change the level of detail you wish to see in the logs. The available levels conform to the npm log levels:
+```
+{
+  error: 0,
+  warn: 1,
+  info: 2,
+  http: 3,
+  verbose: 4,
+  debug: 5,
+  silly: 6
+}
+```
+The log level can be defined through the env variable `LOG_LEVEL`.
+
+To illustrate this: `docker run -p 8080:8080 -e LOG_LEVEL=debug ghcr.io/imec-int/innnobics-sahs-adapters:latest` would print every log statement, except those of level 'silly'.
+
+
 ## Development
 
 This paragraph is intended for developers.
