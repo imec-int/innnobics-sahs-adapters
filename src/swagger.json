@@ -33,7 +33,7 @@
           {
             "name": "pdf",
             "in": "formData",
-            "description": "PDF file to parse",
+            "description": "PDF file to parse. This can be sent as a binary file, or as a base64 encoded string",
             "required": true,
             "type": "file"
           }

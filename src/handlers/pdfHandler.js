@@ -2,6 +2,9 @@ const R = require('ramda');
 
 const pdfJs = require('pdfjs-dist/legacy/build/pdf.js');
 const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const crypto = require('crypto');
 
 const emptySpaceEntry = (item) => item.width === 0 && item.height === 0;
 
@@ -231,22 +234,31 @@ const validateExtractedData = (result) => {
   return patientId.value ? result : undefined;
 };
 
+function tmpFile() {
+  return path.join(os.tmpdir(), `upload.${crypto.randomBytes(6).readUIntLE(0, 6).toString(36)}.pdf`);
+}
+
 const parsePdfFile = (file) => pdfJs.getDocument(file).promise
   .then(extractTextContent)
   .then(extractRelevantData)
   .then(validateExtractedData);
 
-function extractFile(req) {
+const extractFile = (req) => {
   if (req.files?.pdf) {
     return req.files.pdf;
   }
+
   const buffer = Buffer.from(req.body.pdf, 'base64');
-  fs.writeFileSync('random.pdf', buffer);
-  return 'random.pdf';
-}
+  const tempPdfFilePath = tmpFile();
+
+  console.log('Saving base64 uploaded pdf file to file path', tempPdfFilePath);
+
+  fs.writeFileSync(tempPdfFilePath, buffer);
+  return tempPdfFilePath;
+};
 
 const pdfHandler = async (req, res) => {
-  if (!req.files && !req.body.pdf) {
+  if (!req.files && !req.body?.pdf) {
     res.status(400).json({
       status: false,
       message: 'No file uploaded',
