@@ -1,6 +1,7 @@
 const R = require('ramda');
 
 const pdfJs = require('pdfjs-dist/legacy/build/pdf.js');
+const fs = require('fs');
 
 const emptySpaceEntry = (item) => item.width === 0 && item.height === 0;
 
@@ -235,14 +236,23 @@ const parsePdfFile = (file) => pdfJs.getDocument(file).promise
   .then(extractRelevantData)
   .then(validateExtractedData);
 
+function extractFile(req) {
+  if (req.files?.pdf) {
+    return req.files.pdf;
+  }
+  const buffer = Buffer.from(req.body.pdf, 'base64');
+  fs.writeFileSync('random.pdf', buffer);
+  return 'random.pdf';
+}
+
 const pdfHandler = async (req, res) => {
-  if (!req.files) {
+  if (!req.files && !req.body.pdf) {
     res.status(400).json({
       status: false,
       message: 'No file uploaded',
     });
   } else {
-    const pdfFile = req.files.pdf;
+    const pdfFile = extractFile(req);
 
     parsePdfFile(pdfFile).then((data) => {
       if (data) {
