@@ -7,6 +7,8 @@ const path = require('path');
 const swaggerUi = require('swagger-ui-express');
 const { pdfHandler } = require('./handlers/pdfHandler');
 const homeViewHandler = require('./handlers/homeViewHandler');
+const morganMiddleware = require('./tools/morgan');
+const logger = require('./tools/logger');
 
 /** *****************
  * Express setup
@@ -14,7 +16,7 @@ const homeViewHandler = require('./handlers/homeViewHandler');
 const app = express();
 app.use(fileUpload());
 app.use(cors());
-app.use(morgan('dev')); // logging HTTP call
+app.use(morganMiddleware); // logging HTTP calls
 app.use(
   '/api/docs',
   swaggerUi.serve, // enable swagger documentation
@@ -37,4 +39,4 @@ app.get('/', homeViewHandler.get);
 app.post('/', homeViewHandler.post);
 
 const port = process.env.PORT || 8080;
-app.listen(port, () => console.log(`App is listening on port ${port}.`));
+app.listen(port, () => logger.info(`App is listening on port ${port}.`));

@@ -1,6 +1,8 @@
 const R = require('ramda');
 
 const pdfJs = require('pdfjs-dist/legacy/build/pdf.js');
+const { loggers } = require('winston');
+const logger = require('../tools/logger');
 
 const emptySpaceEntry = (item) => item.width === 0 && item.height === 0;
 
@@ -206,6 +208,7 @@ const extractRelevantData = async (allItems) => {
 };
 
 const extractTextContent = async (doc) => {
+  logger.debug('Extracting text content');
   const extractTextContentStartingFromPage = async (pageNumber) => {
     if (pageNumber > doc.numPages) {
       return [];
@@ -254,7 +257,7 @@ const pdfHandler = async (req, res) => {
         res.status(400).send('Unable to extract relevant data');
       }
     }).catch((err) => {
-      console.error(err);
+      logger.error(err);
       res.status(500).send(err);
     });
   }
