@@ -1,7 +1,10 @@
 const R = require('ramda');
 
 const pdfJs = require('pdfjs-dist/legacy/build/pdf.js');
-const { loggers } = require('winston');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const crypto = require('crypto');
 const logger = require('../tools/logger');
 
 const emptySpaceEntry = (item) => item.width === 0 && item.height === 0;
@@ -233,19 +236,37 @@ const validateExtractedData = (result) => {
   return patientId.value ? result : undefined;
 };
 
+function tmpFile() {
+  return path.join(os.tmpdir(), `upload.${crypto.randomBytes(6).readUIntLE(0, 6).toString(36)}.pdf`);
+}
+
 const parsePdfFile = (file) => pdfJs.getDocument(file).promise
   .then(extractTextContent)
   .then(extractRelevantData)
   .then(validateExtractedData);
 
+const extractFile = (req) => {
+  if (req.files?.pdf) {
+    return req.files.pdf;
+  }
+
+  const buffer = Buffer.from(req.body.pdf, 'base64');
+  const tempPdfFilePath = tmpFile();
+
+  logger.debug('Saving base64 uploaded pdf file to file path %s', tempPdfFilePath);
+
+  fs.writeFileSync(tempPdfFilePath, buffer);
+  return tempPdfFilePath;
+};
+
 const pdfHandler = async (req, res) => {
-  if (!req.files) {
+  if (!req.files && !req.body?.pdf) {
     res.status(400).json({
       status: false,
       message: 'No file uploaded',
     });
   } else {
-    const pdfFile = req.files.pdf;
+    const pdfFile = extractFile(req);
 
     parsePdfFile(pdfFile).then((data) => {
       if (data) {
