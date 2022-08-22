@@ -1,6 +1,7 @@
 const winston = require('winston');
 
 const format = winston.format.combine(
+  winston.format.splat(),
   winston.format.timestamp({ format: () => new Date().toISOString() }),
   winston.format.json(),
 );
