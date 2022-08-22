@@ -105,42 +105,41 @@ const startEndDurationBlock = R.curry((blockTitle, label, items) => {
   return R.propOr(undefined, 'str', R.nth(i + offset, items));
 });
 
-const recording = startEndDurationBlock('Recording');
-const monitoringTime = startEndDurationBlock('Monitoring time (flow)');
-const flowEvaluationTime = startEndDurationBlock('Flow evaluation');
-const oxygenSaturation = startEndDurationBlock('Oxygen saturation evaluation');
-const eventsIndex = horizontalRowField('Events index', 'Supine');
-const supineField = horizontalRowField('Supine', 'Non-supine');
-const nonSupineField = horizontalRowField('Non-supine', 'Upright');
-const uprightField = horizontalRowField('Upright', 'Events totals');
-const eventsTotal = horizontalRowField('Events totals', 'Apnea Index');
-const apneaIndex = horizontalRowField('Apnea Index', 'Cheyne-Stokes respiration');
-const cheyneStokesRespiration = horizontalRowField('Cheyne-Stokes respiration', 'Oxygen desaturation');
-const oxygenDesaturation = horizontalRowField('Oxygen desaturation', 'Oxygen saturation %');
-const oxygenSaturationPercentage = horizontalRowField('Oxygen saturation %', 'Oxygen saturation - eval time %');
-const oxygenSaturationEevalTimePercentage = horizontalRowField('Oxygen saturation - eval time %', 'Breaths');
-const breaths = horizontalRowField('Breaths', 'Pulse - bpm');
-const pulseRow = horizontalRowField('Pulse - bpm', 'Analysis guidelines:');
-
 const PATIENT_ID_INDEX = 8;
-const PATIENT_ID_CODE = '0003';
-
 const takeFirstAfter = (label) => (items) => {
   const index = findIndex(label, items);
   return index >= 0 ? R.propOr('', 'str', items[index + 1]).trim() : '';
 };
 
+const RECORDING_DETAILS_CODE = '0008';
 const extractRelevantData = async (allItems) => {
+  const recording = startEndDurationBlock('Recording');
+  const monitoringTime = startEndDurationBlock('Monitoring time (flow)');
+  const flowEvaluationTime = startEndDurationBlock('Flow evaluation');
+  const oxygenSaturation = startEndDurationBlock('Oxygen saturation evaluation');
+  const eventsIndex = horizontalRowField('Events index', 'Supine');
+  const supineField = horizontalRowField('Supine', 'Non-supine');
+  const nonSupineField = horizontalRowField('Non-supine', 'Upright');
+  const uprightField = horizontalRowField('Upright', 'Events totals');
+  const eventsTotal = horizontalRowField('Events totals', 'Apnea Index');
+  const apneaIndex = horizontalRowField('Apnea Index', 'Cheyne-Stokes respiration');
+  const cheyneStokesRespiration = horizontalRowField('Cheyne-Stokes respiration', 'Oxygen desaturation');
+  const oxygenDesaturation = horizontalRowField('Oxygen desaturation', 'Oxygen saturation %');
+  const oxygenSaturationPercentage = horizontalRowField('Oxygen saturation %', 'Oxygen saturation - eval time %');
+  const oxygenSaturationEevalTimePercentage = horizontalRowField('Oxygen saturation - eval time %', 'Breaths');
+  const breaths = horizontalRowField('Breaths', 'Pulse - bpm');
+  const pulseRow = horizontalRowField('Pulse - bpm', 'Analysis guidelines:');
+
   const visibleItems = allItems.filter((i) => i.height > 0 && i.width > 0);
   return [
     template('0001', 'Date', takeStr(0)),
     template('0002', 'Type', takeStr(1)),
-    template(PATIENT_ID_CODE, 'Patient ID', takeSecondPartOfString(PATIENT_ID_INDEX)),
+    template('0003', 'Patient ID', takeTitledFieldValue('Patient ID')),
     template('0004', 'DOB', takeTitledFieldValue('DOB')),
     template('0005', 'Age', takeTitledFieldValue('Age')),
     template('0006', 'Gender', takeTitledFieldValue('Gender')),
     template('0007', 'BMI', takeTitledFieldValue('BMI')),
-    template('0008', 'Recording details', takeFirstAfter('Recording details')),
+    template(RECORDING_DETAILS_CODE, 'Recording details', takeFirstAfter('Recording details')),
     template('0009', 'Device', takeFirstAfter('Device')),
     template('0100', 'Recording Start', recording('Start')),
     template('0101', 'Recording End', recording('End')),
@@ -232,7 +231,7 @@ const extractTextContent = async (doc) => {
 
 const validateExtractedData = (result) => {
   // if the patient ID code could not be extracted, this PDF is invalid
-  const patientId = result.find((e) => e.code === PATIENT_ID_CODE);
+  const patientId = result.find((e) => e.code === RECORDING_DETAILS_CODE);
   return patientId.value ? result : undefined;
 };
 
