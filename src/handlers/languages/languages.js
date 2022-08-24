@@ -1,3 +1,4 @@
+const R = require('ramda');
 const { findTextBlockIndex } = require('../pdf');
 
 const ENGLISH = 'english';
@@ -12,11 +13,36 @@ const SPANISH_LABELS = require('./spanish');
 const CATALAN = 'catalan';
 const CATALAN_LABELS = require('./catalan');
 
+const genderTranslator = (dict) => (str) => {
+  if (str?.toLowerCase().includes(dict.female)) {
+    return 'Female';
+  } if (str?.toLowerCase().includes(dict.male)) {
+    return 'Male';
+  }
+  return `Unknown (${str})`;
+};
+
 const LANGUAGES = [
-  { name: ENGLISH, labels: ENGLISH_LABELS },
-  { name: PORTUGUESE, labels: PORTUGESE_LABELS },
-  { name: SPANISH, labels: SPANISH_LABELS },
-  { name: CATALAN, labels: CATALAN_LABELS },
+  {
+    name: ENGLISH,
+    labels: ENGLISH_LABELS,
+    translateGender: genderTranslator({ male: 'male', female: 'female' }),
+  },
+  {
+    name: PORTUGUESE,
+    labels: PORTUGESE_LABELS,
+    translateGender: genderTranslator({ male: 'masculino', female: 'feminino' }),
+  },
+  {
+    name: SPANISH,
+    labels: SPANISH_LABELS,
+    translateGender: genderTranslator({ male: 'hombre', female: 'mujer' }),
+  },
+  {
+    name: CATALAN,
+    labels: CATALAN_LABELS,
+    translateGender: genderTranslator({ male: 'hombre', female: 'mujer' }),
+  },
 ];
 
 const determineLanguage = (textBlocks) => {

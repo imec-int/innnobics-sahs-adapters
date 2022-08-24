@@ -183,6 +183,8 @@ const extractRelevantData = async ({ items: unsortedItems, language }) => {
     return concatFn(items);
   };
 
+  const tranlateGender = (value) => dictionary.translateGender(value);
+
   function takeAdditionalData(items) {
     const analysisGuidelinesIndex = findTextBlockIndex(labels.ANALYSIS_GUIDELINES, items);
     const concatFn = concatUntilEndOfPage(analysisGuidelinesIndex + 2);
@@ -195,7 +197,7 @@ const extractRelevantData = async ({ items: unsortedItems, language }) => {
     extractItemWithFn('0003', 'Patient ID', takeTitledFieldValue(labels.PATIENT_ID)),
     extractItemWithFn('0004', 'DOB', takeTitledFieldValue(labels.DOB)),
     extractItemWithFn('0005', 'Age', takeTitledFieldValue(labels.AGE)),
-    extractItemWithFn('0006', 'Gender', takeTitledFieldValue(labels.GENDER)),
+    extractItemWithFn('0006', 'Gender', R.pipe(takeTitledFieldValue(labels.GENDER), tranlateGender)),
     extractItemWithFn('0007', 'BMI', takeTitledFieldValue(labels.BMI)),
     extractItemWithFn(RECORDING_DETAILS_CODE, 'Recording details', takeFirstAfter(labels.RECORDING_DETAILS)),
     extractItemWithFn('0009', 'Device', takeFirstAfter(labels.DEVICE)),

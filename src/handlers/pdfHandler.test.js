@@ -194,7 +194,7 @@ describe('Handling a Portugese file', () => {
     { code: '0003', description: 'Patient ID', value: '' },
     { code: '0004', description: 'DOB', value: '04/04/1983' },
     { code: '0005', description: 'Age', value: '39' },
-    { code: '0006', description: 'Gender', value: 'Sexo feminino' },
+    { code: '0006', description: 'Gender', value: 'Female' },
     { code: '0007', description: 'BMI', value: '27.3' },
     { code: '0008', description: 'Recording details', value: '26/10/2015' },
     { code: '0009', description: 'Device', value: 'ApneaLink Air' },
@@ -287,6 +287,20 @@ describe('Handling a Portugese file', () => {
       expect(entry.name).toBe(description);
       expect(entry.value).toBe(value);
     });
+  });
+});
+
+describe('Gender should be translated to the english word', () => {
+  it('should translate portugese', async () => {
+    const SAMPLE_PDF = path.join(__dirname, 'report-portugese.pdf');
+    const response = await supertest(app)
+      .post(URL)
+      .attach('pdf', SAMPLE_PDF);
+
+    const gender = response.body?.data?.find((e) => e.code === '0006');
+
+    expect(gender).toBeDefined();
+    expect(gender.value).toBe('Female');
   });
 });
 
