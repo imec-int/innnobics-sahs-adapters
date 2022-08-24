@@ -6,96 +6,24 @@ const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 const logger = require('../tools/logger');
-const { findTextBlockIndex, findFirstFourNumbers, findNextDuration } = require('./pdf');
+const {
+  findFirstFourNumbers, findNextDuration,
+  toDuration, startEndDurationBlock, horizontalRowField, concatUntilText,
+  takeStr, takeTitledFieldValue, takeFirstAfter, mapDuration, findTextBlockIndex, extractTextBlocks,
+} = require('./pdf');
+
 const { determineLanguage, getDictionary } = require('./languages');
 
-const emptySpaceEntry = (item) => item.width === 0 && item.height === 0;
-
-const take = (index) => (arr) => (index < 0 || index >= arr.length ? undefined : arr[index]);
-
-const takeStr = (index) => (arr) => R.prop('str', take(index)(arr));
-
-function toDuration(str) {
-  return str ? str.padStart(5, '0') : str;
-}
-
-const mapDuration = R.curry((extractStringFn, items) => {
-  const str = extractStringFn(items);
-  return toDuration(str);
-});
-
-const trimEnd = R.curry((char, str) => {
-  if (str && str.endsWith(char)) {
-    return trimEnd(char, R.dropLast(1, str)); // recursively remove multiple char at the end
-  }
-  return str;
-});
-
-const findIndex = findTextBlockIndex;
-
-const concatUntil = (fn, index) => R.pipe(
-  R.drop(index),
-  R.takeWhile(R.complement(fn)),
-  R.map(R.prop('str')),
-  R.join(' '),
-);
-
-const concatUntilText = R.curry((limitText, index) => concatUntil((item) => R.trim(item.str).startsWith(limitText), index));
-
-const takeSecondPartOfString = (index) => (arr) => R.pipe(
-  take(index),
-  R.propOr('', 'str'),
-  R.split(':'),
-  R.nth(1),
-  R.defaultTo(''), // in case nothing is found, use a blank string
-  R.trim,
-)(arr);
-
-const takeTitledFieldValue = R.curry((title, items) => {
-  const strPropStartsWith = R.pipe(R.prop('str'), R.toLower(), R.startsWith(`${R.toLower(title)}:`));
-
-  const index = R.findIndex(strPropStartsWith, items);
-  return takeSecondPartOfString(index)(items);
-});
-
-const template = (code, name, valueFn) => (items) => ({
+const extractItemWithFn = (code, name, valueFn) => (items) => ({
   code,
   name,
   value: valueFn(items),
 });
 
-const extractHorizontalFields = (blockLabel, nextBlockLabel) => (items) => {
-  const blockLabelItem = items.find((item) => item.str.startsWith(blockLabel));
-  const nextBlockLabelItem = items.find((item) => item.str.startsWith(nextBlockLabel));
-
-  if (!blockLabelItem || !nextBlockLabelItem) {
-    return {};
-  }
-
-  const sortTopToBottom = (i1, i2) => Math.round(i2.transform[5]) - Math.round(i1.transform[5]);
-  const sortLeftToRight = (i1, i2) => i1.transform[4] - i2.transform[4];
-
-  const inBetweenY = (lowerY, upperY) => (item) => {
-    const y = item.transform[5];
-    return lowerY < y && y <= upperY;
-  };
-
-  return R.pipe(
-    // find items in same horizontal row
-    R.filter(inBetweenY(nextBlockLabelItem.transform[5], blockLabelItem.transform[5])),
-    R.sortWith([sortTopToBottom, sortLeftToRight]), // sort from top to bottom, left to right
-    R.filter((item) => item.str.trim() !== ''), // remove empty items
-    (is) => (R.length(is) % 2 === 1 ? R.drop(1, is) : is), // remove block label if odd number of items
-    R.map(R.prop('str')), // extract string values from all items
-    R.map(trimEnd(':')), // remove the : at the end of the labels
-    R.splitEvery(2), // split the array in smaller 2-object arrays
-    R.fromPairs, // and create an object out of it
-  )(items);
-};
-
-const horizontalRowField = (blockTitle, nextBlockTitle) => R.curry((label, items) => {
-  const block = extractHorizontalFields(blockTitle, nextBlockTitle)(items);
-  return block[label] || block[`${blockTitle} ${label}`];
+const useFixedValue = (code, name, value) => () => ({
+  code,
+  name,
+  value,
 });
 
 const apneaIndexRow = (blockTitle, sorted) => {
@@ -124,25 +52,8 @@ const oxygenSaturationEevalTimePercentageRow = (blockTitle, sorted) => {
   };
 };
 
-const startEndDurationBlock = (blockTitle) => {
-  const getStringAtOffset = R.curry((offset, items) => {
-    const i = findIndex(blockTitle, items);
-    return i >= 0 ? R.propOr(undefined, 'str', R.nth(i + offset, items)) : undefined;
-  });
-
-  return {
-    start: getStringAtOffset(2),
-    end: getStringAtOffset(4),
-    duration: mapDuration(getStringAtOffset(6)),
-  };
-};
-
-const takeFirstAfter = (label) => (items) => {
-  const index = findIndex(label, items);
-  return index >= 0 ? R.propOr('', 'str', items[index + 1]).trim() : '';
-};
-
 const RECORDING_DETAILS_CODE = '0008';
+
 const extractRelevantData = async ({ items: unsortedItems, language }) => {
   const dictionary = getDictionary(language);
   logger.info('Handling a %s pdf file', dictionary.name);
@@ -175,104 +86,86 @@ const extractRelevantData = async ({ items: unsortedItems, language }) => {
 
   const concatUntilEndOfPage = concatUntilText(labels.PRINTED_ON);
 
-  return [
-    template('0001', 'Date', takeStr(0)),
-    template('0002', 'Type', takeStr(1)),
-    template('0003', 'Patient ID', takeTitledFieldValue(labels.PATIENT_ID)),
-    template('0004', 'DOB', takeTitledFieldValue(labels.DOB)),
-    template('0005', 'Age', takeTitledFieldValue(labels.AGE)),
-    template('0006', 'Gender', takeTitledFieldValue(labels.GENDER)),
-    template('0007', 'BMI', takeTitledFieldValue(labels.BMI)),
-    template(RECORDING_DETAILS_CODE, 'Recording details', takeFirstAfter(labels.RECORDING_DETAILS)),
-    template('0009', 'Device', takeFirstAfter(labels.DEVICE)),
-    template('0100', 'Recording Start', recording.start),
-    template('0101', 'Recording End', recording.end),
-    template('0102', 'Recording Duration - hr', recording.duration),
-    template('0201', 'Monitoring time (flow) Start ', monitoringTime.start),
-    template('0202', 'Monitoring time (flow) End ', monitoringTime.end),
-    template('0203', 'Monitoring time (flow) Duration - hr', (monitoringTime.duration)),
-    template('0204', 'Flow evaluation Start', flowEvaluationTime.start),
-    template('0205', 'Flow evaluation End', flowEvaluationTime.end),
-    template('0206', 'Flow evaluation Duration - hr', (flowEvaluationTime.duration)),
-    template('0301', 'Oxygen saturation evaluation Start ', oxygenSaturation.start),
-    template('0302', 'Oxygen saturation evaluation End ', oxygenSaturation.end),
-    template('0303', 'Oxygen saturation evaluation Duration - hr', (oxygenSaturation.duration)),
-    template('0401', 'Events index REI (AHI)', eventsIndex(labels.REI_AHI)),
-    template('0402', 'Events index AI', eventsIndex(labels.AI)),
-    template('0403', 'Events index HI', eventsIndex(labels.HI)),
-    template('0501', 'Supine Time-hr', mapDuration(supineField(labels.TIME_HR))),
-    template('0502', 'Supine Percentage', supineField(labels.PERCENTAGE)),
-    template('0503', 'Supine REI (AHI)', supineField(labels.REI_AHI)),
-    template('0504', 'Supine AI', supineField(labels.AI)),
-    template('0505', 'Supine HI', supineField(labels.HI)),
-    template('0601', 'Non-supine Time-hr', mapDuration(nonSupineField(labels.TIME_HR))),
-    template('0602', 'Non-supine Percentage', nonSupineField(labels.PERCENTAGE)),
-    template('0603', 'Non-supine REI (AHI)', nonSupineField(labels.REI_AHI)),
-    template('0604', 'Non-supine AI', nonSupineField(labels.AI)),
-    template('0605', 'Non-supine HI', nonSupineField(labels.HI)),
-    template('0701', 'Upright Time-hr', mapDuration(uprightField(labels.TIME_HR))),
-    template('0702', 'Upright Percentage', uprightField(labels.PERCENTAGE)),
-    template('0703', 'Upright REI (AHI)', uprightField(labels.REI_AHI)),
-    template('0704', 'Upright AI', uprightField(labels.AI)),
-    template('0705', 'Upright HI', uprightField(labels.HI)),
-    template('0801', 'Events totals Apneas:', eventsTotal(labels.APNEAS)),
-    template('0802', 'Events totals Hypopneas:', eventsTotal(labels.HYPOPNEAS)),
-    template('0901', 'Apnea Index Obstructive:', () => apneaIndex.obstructive),
-    template('0902', 'Apnea Index Central:', () => apneaIndex.central),
-    template('0903', 'Apnea Index Mixed:', () => apneaIndex.mixed),
-    template('0904', 'Apnea Index Unclassified:', () => apneaIndex.unclassified),
-    template('1001', 'Cheyne-Stokes respiration Time - hr: ', mapDuration(cheyneStokesRespiration(labels.TIME_HR))),
-    template('1002', 'Cheyne-Stokes respiration Percentage', cheyneStokesRespiration(labels.PERCENTAGE)),
-    template('1101', 'Oxygen desaturation ODI', oxygenDesaturation(labels.ODI)),
-    template('1102', 'Oxygen desaturation Total', oxygenDesaturation(labels.TOTAL)),
-    template('1201', 'Oxygen saturation % Baseline', oxygenSaturationPercentage(labels.BASELINE)),
-    template('1202', 'Oxygen saturation % Avg', oxygenSaturationPercentage(labels.AVERAGE)),
-    template('1203', 'Oxygen saturation % Lowest', oxygenSaturationPercentage(labels.LOWEST)),
-    template('1204', 'Oxygen saturation - eval time % <=90%sat', () => oxygenSaturationEevalTimePercentage.lessThan90),
-    template('1205', 'Oxygen saturation - eval time % <=85%sat:', () => oxygenSaturationEevalTimePercentage.lessThan85),
-    template('1206', 'Oxygen saturation - eval time % <=80%sat', () => oxygenSaturationEevalTimePercentage.lessThan80),
-    template('1207', 'Oxygen saturation - eval time % <=88%sat', () => oxygenSaturationEevalTimePercentage.lessThan88),
-    template('1208', 'Oxygen saturation - eval time % <=88%Time - hr:', () => oxygenSaturationEevalTimePercentage.duration),
-    template('1301', 'Breaths Total', breaths(labels.TOTAL)),
-    template('1302', 'Breaths Avg/min', breaths(labels.AVG_PER_MINUTE)),
-    template('1303', 'Breaths Snores', breaths(labels.SNORES)),
-    template('1401', 'Pulse - bpm Min', pulseRow(labels.MINIMUM)),
-    template('1402', 'Pulse - bpm Avg', pulseRow(labels.AVERAGE)),
-    template('1403', 'Pulse - bpm Max', pulseRow(labels.MAXIMUM)),
-    template('1500', 'Analysis guidelines', takeFirstAfter(labels.ANALYSIS_GUIDELINES)),
-    template('1600', 'Adicional data', (items) => {
-      const analysisGuidelinesIndex = findIndex(labels.ANALYSIS_GUIDELINES, items);
-      const concatFn = concatUntilEndOfPage(analysisGuidelinesIndex + 2);
-      return concatFn(items);
-    }),
-    template('1700', 'Interpretation', (items) => {
-      const interpretationIndex = findIndex(labels.INTERPRETATION, items);
-      const concatFn = concatUntilEndOfPage(interpretationIndex + 1);
-      return concatFn(items);
-    }),
-  ].map((fn) => fn(visibleItems));
-};
-
-const extractTextBlocks = (includedPages) => async (doc) => {
-  logger.debug('Extracting text content');
-
-  const validPages = R.intersection(R.range(1, doc.numPages + 1), includedPages);
-
-  const pagesContent = await Promise.all(validPages.map((page) => doc.getPage(page)));
-  const textBlocksContent = await Promise.all(pagesContent.map((pc) => pc.getTextContent({
-    normalizeWhitespace: false,
-    disableCombineTextItems: false,
-  })));
-
-  const addPageToItems = (promiseResult, index) => {
-    const newItems = promiseResult.items.map(R.assoc('page', index + 1));
-    return { ...promiseResult, items: newItems };
+  const takeInterpretation = (items) => {
+    const interpretationIndex = findTextBlockIndex(labels.INTERPRETATION, items);
+    const concatFn = concatUntilEndOfPage(interpretationIndex + 1);
+    return concatFn(items);
   };
-  return textBlocksContent
-    .map(addPageToItems)
-    .map(R.prop('items'))
-    .flat()
-    .filter(R.complement(emptySpaceEntry));
+
+  function takeAdditionalData(items) {
+    const analysisGuidelinesIndex = findTextBlockIndex(labels.ANALYSIS_GUIDELINES, items);
+    const concatFn = concatUntilEndOfPage(analysisGuidelinesIndex + 2);
+    return concatFn(items);
+  }
+
+  return [
+    extractItemWithFn('0001', 'Date', takeStr(0)),
+    extractItemWithFn('0002', 'Type', takeStr(1)),
+    extractItemWithFn('0003', 'Patient ID', takeTitledFieldValue(labels.PATIENT_ID)),
+    extractItemWithFn('0004', 'DOB', takeTitledFieldValue(labels.DOB)),
+    extractItemWithFn('0005', 'Age', takeTitledFieldValue(labels.AGE)),
+    extractItemWithFn('0006', 'Gender', takeTitledFieldValue(labels.GENDER)),
+    extractItemWithFn('0007', 'BMI', takeTitledFieldValue(labels.BMI)),
+    extractItemWithFn(RECORDING_DETAILS_CODE, 'Recording details', takeFirstAfter(labels.RECORDING_DETAILS)),
+    extractItemWithFn('0009', 'Device', takeFirstAfter(labels.DEVICE)),
+    extractItemWithFn('0100', 'Recording Start', recording.start),
+    extractItemWithFn('0101', 'Recording End', recording.end),
+    extractItemWithFn('0102', 'Recording Duration - hr', recording.duration),
+    extractItemWithFn('0201', 'Monitoring time (flow) Start ', monitoringTime.start),
+    extractItemWithFn('0202', 'Monitoring time (flow) End ', monitoringTime.end),
+    extractItemWithFn('0203', 'Monitoring time (flow) Duration - hr', (monitoringTime.duration)),
+    extractItemWithFn('0204', 'Flow evaluation Start', flowEvaluationTime.start),
+    extractItemWithFn('0205', 'Flow evaluation End', flowEvaluationTime.end),
+    extractItemWithFn('0206', 'Flow evaluation Duration - hr', flowEvaluationTime.duration),
+    extractItemWithFn('0301', 'Oxygen saturation evaluation Start ', oxygenSaturation.start),
+    extractItemWithFn('0302', 'Oxygen saturation evaluation End ', oxygenSaturation.end),
+    extractItemWithFn('0303', 'Oxygen saturation evaluation Duration - hr', oxygenSaturation.duration),
+    extractItemWithFn('0401', 'Events index REI (AHI)', eventsIndex(labels.REI_AHI)),
+    extractItemWithFn('0402', 'Events index AI', eventsIndex(labels.AI)),
+    extractItemWithFn('0403', 'Events index HI', eventsIndex(labels.HI)),
+    extractItemWithFn('0501', 'Supine Time-hr', mapDuration(supineField(labels.TIME_HR))),
+    extractItemWithFn('0502', 'Supine Percentage', supineField(labels.PERCENTAGE)),
+    extractItemWithFn('0503', 'Supine REI (AHI)', supineField(labels.REI_AHI)),
+    extractItemWithFn('0504', 'Supine AI', supineField(labels.AI)),
+    extractItemWithFn('0505', 'Supine HI', supineField(labels.HI)),
+    extractItemWithFn('0601', 'Non-supine Time-hr', mapDuration(nonSupineField(labels.TIME_HR))),
+    extractItemWithFn('0602', 'Non-supine Percentage', nonSupineField(labels.PERCENTAGE)),
+    extractItemWithFn('0603', 'Non-supine REI (AHI)', nonSupineField(labels.REI_AHI)),
+    extractItemWithFn('0604', 'Non-supine AI', nonSupineField(labels.AI)),
+    extractItemWithFn('0605', 'Non-supine HI', nonSupineField(labels.HI)),
+    extractItemWithFn('0701', 'Upright Time-hr', mapDuration(uprightField(labels.TIME_HR))),
+    extractItemWithFn('0702', 'Upright Percentage', uprightField(labels.PERCENTAGE)),
+    extractItemWithFn('0703', 'Upright REI (AHI)', uprightField(labels.REI_AHI)),
+    extractItemWithFn('0704', 'Upright AI', uprightField(labels.AI)),
+    extractItemWithFn('0705', 'Upright HI', uprightField(labels.HI)),
+    extractItemWithFn('0801', 'Events totals Apneas:', eventsTotal(labels.APNEAS)),
+    extractItemWithFn('0802', 'Events totals Hypopneas:', eventsTotal(labels.HYPOPNEAS)),
+    useFixedValue('0901', 'Apnea Index Obstructive:', apneaIndex.obstructive),
+    useFixedValue('0902', 'Apnea Index Central:', apneaIndex.central),
+    useFixedValue('0903', 'Apnea Index Mixed:', apneaIndex.mixed),
+    useFixedValue('0904', 'Apnea Index Unclassified:', apneaIndex.unclassified),
+    extractItemWithFn('1001', 'Cheyne-Stokes respiration Time - hr: ', mapDuration(cheyneStokesRespiration(labels.TIME_HR))),
+    extractItemWithFn('1002', 'Cheyne-Stokes respiration Percentage', cheyneStokesRespiration(labels.PERCENTAGE)),
+    extractItemWithFn('1101', 'Oxygen desaturation ODI', oxygenDesaturation(labels.ODI)),
+    extractItemWithFn('1102', 'Oxygen desaturation Total', oxygenDesaturation(labels.TOTAL)),
+    extractItemWithFn('1201', 'Oxygen saturation % Baseline', oxygenSaturationPercentage(labels.BASELINE)),
+    extractItemWithFn('1202', 'Oxygen saturation % Avg', oxygenSaturationPercentage(labels.AVERAGE)),
+    extractItemWithFn('1203', 'Oxygen saturation % Lowest', oxygenSaturationPercentage(labels.LOWEST)),
+    extractItemWithFn('1204', 'Oxygen saturation - eval time % <=90%sat', () => oxygenSaturationEevalTimePercentage.lessThan90),
+    extractItemWithFn('1205', 'Oxygen saturation - eval time % <=85%sat:', () => oxygenSaturationEevalTimePercentage.lessThan85),
+    extractItemWithFn('1206', 'Oxygen saturation - eval time % <=80%sat', () => oxygenSaturationEevalTimePercentage.lessThan80),
+    extractItemWithFn('1207', 'Oxygen saturation - eval time % <=88%sat', () => oxygenSaturationEevalTimePercentage.lessThan88),
+    extractItemWithFn('1208', 'Oxygen saturation - eval time % <=88%Time - hr:', () => oxygenSaturationEevalTimePercentage.duration),
+    extractItemWithFn('1301', 'Breaths Total', breaths(labels.TOTAL)),
+    extractItemWithFn('1302', 'Breaths Avg/min', breaths(labels.AVG_PER_MINUTE)),
+    extractItemWithFn('1303', 'Breaths Snores', breaths(labels.SNORES)),
+    extractItemWithFn('1401', 'Pulse - bpm Min', pulseRow(labels.MINIMUM)),
+    extractItemWithFn('1402', 'Pulse - bpm Avg', pulseRow(labels.AVERAGE)),
+    extractItemWithFn('1403', 'Pulse - bpm Max', pulseRow(labels.MAXIMUM)),
+    extractItemWithFn('1500', 'Analysis guidelines', takeFirstAfter(labels.ANALYSIS_GUIDELINES)),
+    extractItemWithFn('1600', 'Adicional data', takeAdditionalData),
+    extractItemWithFn('1700', 'Interpretation', takeInterpretation),
+  ].map((fn) => fn(visibleItems));
 };
 
 const validateExtractedData = (result) => {
