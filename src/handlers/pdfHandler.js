@@ -5,11 +5,13 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
+const { min } = require('ramda');
 const logger = require('../tools/logger');
 const {
-  findFirstFourNumbers, findNextDuration,
-  toDuration, startEndDurationBlock, horizontalRowField, concatUntilText,
-  takeStr, takeTitledFieldValue, takeFirstAfter, mapDuration, findTextBlockIndex, extractTextBlocks,
+  findNextDuration,
+  startEndDurationRow, horizontalRowField, concatUntilText,
+  takeStr, takeTitledFieldValue, takeFirstAfter, findTextBlockIndex, extractTextBlocks,
+  findNext2Numbers, findNextNumber, findNext4Numbers, findNext3Numbers,
 } = require('./pdf');
 
 const { determineLanguage, getDictionary } = require('./languages');
@@ -28,7 +30,7 @@ const useFixedValue = (code, name, value) => () => ({
 
 const apneaIndexRow = (blockTitle, sorted) => {
   const labelIndex = sorted.findIndex((item) => item.str.startsWith(blockTitle));
-  const numbers = findFirstFourNumbers(R.drop(labelIndex, sorted));
+  const numbers = findNext4Numbers(labelIndex, sorted);
 
   return {
     obstructive: R.nth(0, numbers),
@@ -38,17 +40,106 @@ const apneaIndexRow = (blockTitle, sorted) => {
   };
 };
 
+const cheyneStokesRespirationRow = (blockTitle, sorted) => {
+  const labelIndex = sorted.findIndex((item) => item.str.startsWith(blockTitle));
+
+  return {
+    time: findNextDuration(labelIndex, sorted),
+    percentage: findNextNumber(labelIndex, sorted),
+  };
+};
+
+const oxygenDesaturationRow = (blockTitle, sorted) => {
+  const labelIndex = sorted.findIndex((item) => item.str.startsWith(blockTitle));
+  const numbers = findNext2Numbers(labelIndex, sorted);
+  return {
+    odi: numbers[0],
+    total: numbers[1],
+  };
+};
+
+const oxygenSaturationPercentageRow = (blockTitle, sorted) => {
+  const labelIndex = sorted.findIndex((item) => item.str.startsWith(blockTitle));
+  const numbers = findNext3Numbers(labelIndex, sorted);
+  return {
+    baseline: numbers[0],
+    average: numbers[1],
+    lowest: numbers[2],
+  };
+};
+
 const oxygenSaturationEevalTimePercentageRow = (blockTitle, sorted) => {
   const labelIndex = sorted.findIndex((item) => item.str.startsWith(blockTitle));
-  const numbers = findFirstFourNumbers(R.drop(labelIndex, sorted));
-  const duration = findNextDuration(R.drop(labelIndex, sorted));
+  const numbers = findNext4Numbers(labelIndex, sorted);
+  const duration = findNextDuration(labelIndex, sorted);
 
   return {
     lessThan90: R.nth(0, numbers),
     lessThan85: R.nth(1, numbers),
     lessThan80: R.nth(2, numbers),
     lessThan88: R.nth(3, numbers),
-    duration: toDuration(duration?.str),
+    duration,
+  };
+};
+
+const breathsRow = (blockTitle, sorted) => {
+  const labelIndex = sorted.findIndex((item) => item.str.startsWith(blockTitle));
+  const numbers = findNext3Numbers(labelIndex, sorted);
+
+  return {
+    total: numbers[0],
+    averagePerMinute: numbers[1],
+    snores: numbers[2],
+  };
+};
+
+const pulseRow = (blockTitle, sorted) => {
+  const labelIndex = sorted.findIndex((item) => item.str.startsWith(blockTitle));
+  const numbers = findNext3Numbers(labelIndex, sorted);
+
+  return {
+    min: numbers[0],
+    average: numbers[1],
+    max: numbers[2],
+  };
+};
+
+const eventsRow = (blockTitle, sorted) => {
+  const labelIndex = sorted.findIndex((item) => item.str.startsWith(blockTitle));
+  const numbers = findNext3Numbers(labelIndex, sorted);
+
+  return {
+    reiAhi: R.nth(0, numbers),
+    ai: R.nth(1, numbers),
+    hi: R.nth(2, numbers),
+  };
+};
+
+const timedReiRow = (blockTitle, sorted) => {
+  const labelIndex = sorted.findIndex((item) => item.str.startsWith(blockTitle));
+  const duration = findNextDuration(labelIndex, sorted);
+  const numbers = findNext4Numbers(labelIndex, sorted);
+
+  return {
+    timeHr: duration,
+    percentage: R.nth(0, numbers),
+    reiAhi: R.nth(1, numbers),
+    ai: R.nth(2, numbers),
+    hi: R.nth(3, numbers),
+  };
+};
+
+const supineRow = timedReiRow;
+const nonSupineRow = timedReiRow;
+const uprightRow = timedReiRow;
+
+const eventsTotalRow = (title, items) => {
+  const labelIndex = items.findIndex((item) => item.str.startsWith(title));
+  const numbers = findNext2Numbers(labelIndex, items);
+
+  return {
+    apneas: numbers[0],
+    hypopneas: numbers[1],
   };
 };
 
@@ -67,22 +158,22 @@ const extractRelevantData = async ({ items: unsortedItems, language }) => {
   const sortedItems = R.sortWith([sortByPage, sortTopToBottom, sortLeftToRight], visibleItems);
 
   const { labels } = dictionary;
-  const recording = startEndDurationBlock(labels.RECORDING);
-  const monitoringTime = startEndDurationBlock(labels.MONITORING_TIME_FLOW);
-  const flowEvaluationTime = startEndDurationBlock(labels.FLOW_EVALUATION);
-  const oxygenSaturation = startEndDurationBlock(labels.OXYGEN_SATURATION_EVALUATION);
-  const eventsIndex = horizontalRowField(labels.EVENTS_INDEX, labels.SUPINE);
-  const supineField = horizontalRowField(labels.SUPINE, labels.NON_SUPINE);
-  const nonSupineField = horizontalRowField(labels.NON_SUPINE, labels.UPRIGHT);
-  const uprightField = horizontalRowField(labels.UPRIGHT, labels.EVENTS_TOTAL);
-  const eventsTotal = horizontalRowField(labels.EVENTS_TOTAL, labels.APNEA_INDEX);
+  const recording = startEndDurationRow(labels.RECORDING, sortedItems);
+  const monitoringTime = startEndDurationRow(labels.MONITORING_TIME_FLOW, sortedItems);
+  const flowEvaluationTime = startEndDurationRow(labels.FLOW_EVALUATION, sortedItems);
+  const oxygenSaturation = startEndDurationRow(labels.OXYGEN_SATURATION_EVALUATION, sortedItems);
+  const eventsFields = eventsRow(labels.EVENTS_INDEX, sortedItems);
+  const supineFields = supineRow(labels.SUPINE, sortedItems);
+  const nonSupineFields = nonSupineRow(labels.NON_SUPINE, sortedItems);
+  const uprightFields = uprightRow(labels.UPRIGHT, sortedItems);
+  const eventsTotal = eventsTotalRow(labels.EVENTS_TOTAL, sortedItems);
   const apneaIndex = apneaIndexRow(labels.APNEA_INDEX, sortedItems);
-  const cheyneStokesRespiration = horizontalRowField(labels.CHEYNE_STOKES, labels.OXYGEN_DESATURATION);
-  const oxygenDesaturation = horizontalRowField(labels.OXYGEN_DESATURATION, labels.OXYGEN_SATURATION_PERCENTAGE);
-  const oxygenSaturationPercentage = horizontalRowField(labels.OXYGEN_SATURATION_PERCENTAGE, labels.OXYGEN_SATURATION_EVAL_TIME_PERCENTAGE);
+  const cheyneStokesRespiration = cheyneStokesRespirationRow(labels.CHEYNE_STOKES, sortedItems);
+  const oxygenDesaturation = oxygenDesaturationRow(labels.OXYGEN_DESATURATION, sortedItems);
+  const oxygenSaturationPercentage = oxygenSaturationPercentageRow(labels.OXYGEN_SATURATION_PERCENTAGE, sortedItems);
   const oxygenSaturationEevalTimePercentage = oxygenSaturationEevalTimePercentageRow(labels.OXYGEN_SATURATION_EVAL_TIME_PERCENTAGE, sortedItems);
-  const breaths = horizontalRowField(labels.BREATHS, labels.PULSE_BPM);
-  const pulseRow = horizontalRowField(labels.PULSE_BPM, labels.ANALYSIS_GUIDELINES);
+  const breaths = breathsRow(labels.BREATHS, sortedItems);
+  const pulse = pulseRow(labels.PULSE_BPM, sortedItems);
 
   const concatUntilEndOfPage = concatUntilText(labels.PRINTED_ON);
 
@@ -108,60 +199,60 @@ const extractRelevantData = async ({ items: unsortedItems, language }) => {
     extractItemWithFn('0007', 'BMI', takeTitledFieldValue(labels.BMI)),
     extractItemWithFn(RECORDING_DETAILS_CODE, 'Recording details', takeFirstAfter(labels.RECORDING_DETAILS)),
     extractItemWithFn('0009', 'Device', takeFirstAfter(labels.DEVICE)),
-    extractItemWithFn('0100', 'Recording Start', recording.start),
-    extractItemWithFn('0101', 'Recording End', recording.end),
-    extractItemWithFn('0102', 'Recording Duration - hr', recording.duration),
-    extractItemWithFn('0201', 'Monitoring time (flow) Start ', monitoringTime.start),
-    extractItemWithFn('0202', 'Monitoring time (flow) End ', monitoringTime.end),
-    extractItemWithFn('0203', 'Monitoring time (flow) Duration - hr', (monitoringTime.duration)),
-    extractItemWithFn('0204', 'Flow evaluation Start', flowEvaluationTime.start),
-    extractItemWithFn('0205', 'Flow evaluation End', flowEvaluationTime.end),
-    extractItemWithFn('0206', 'Flow evaluation Duration - hr', flowEvaluationTime.duration),
-    extractItemWithFn('0301', 'Oxygen saturation evaluation Start ', oxygenSaturation.start),
-    extractItemWithFn('0302', 'Oxygen saturation evaluation End ', oxygenSaturation.end),
-    extractItemWithFn('0303', 'Oxygen saturation evaluation Duration - hr', oxygenSaturation.duration),
-    extractItemWithFn('0401', 'Events index REI (AHI)', eventsIndex(labels.REI_AHI)),
-    extractItemWithFn('0402', 'Events index AI', eventsIndex(labels.AI)),
-    extractItemWithFn('0403', 'Events index HI', eventsIndex(labels.HI)),
-    extractItemWithFn('0501', 'Supine Time-hr', mapDuration(supineField(labels.TIME_HR))),
-    extractItemWithFn('0502', 'Supine Percentage', supineField(labels.PERCENTAGE)),
-    extractItemWithFn('0503', 'Supine REI (AHI)', supineField(labels.REI_AHI)),
-    extractItemWithFn('0504', 'Supine AI', supineField(labels.AI)),
-    extractItemWithFn('0505', 'Supine HI', supineField(labels.HI)),
-    extractItemWithFn('0601', 'Non-supine Time-hr', mapDuration(nonSupineField(labels.TIME_HR))),
-    extractItemWithFn('0602', 'Non-supine Percentage', nonSupineField(labels.PERCENTAGE)),
-    extractItemWithFn('0603', 'Non-supine REI (AHI)', nonSupineField(labels.REI_AHI)),
-    extractItemWithFn('0604', 'Non-supine AI', nonSupineField(labels.AI)),
-    extractItemWithFn('0605', 'Non-supine HI', nonSupineField(labels.HI)),
-    extractItemWithFn('0701', 'Upright Time-hr', mapDuration(uprightField(labels.TIME_HR))),
-    extractItemWithFn('0702', 'Upright Percentage', uprightField(labels.PERCENTAGE)),
-    extractItemWithFn('0703', 'Upright REI (AHI)', uprightField(labels.REI_AHI)),
-    extractItemWithFn('0704', 'Upright AI', uprightField(labels.AI)),
-    extractItemWithFn('0705', 'Upright HI', uprightField(labels.HI)),
-    extractItemWithFn('0801', 'Events totals Apneas:', eventsTotal(labels.APNEAS)),
-    extractItemWithFn('0802', 'Events totals Hypopneas:', eventsTotal(labels.HYPOPNEAS)),
+    useFixedValue('0100', 'Recording Start', recording.start),
+    useFixedValue('0101', 'Recording End', recording.end),
+    useFixedValue('0102', 'Recording Duration - hr', recording.duration),
+    useFixedValue('0201', 'Monitoring time (flow) Start ', monitoringTime.start),
+    useFixedValue('0202', 'Monitoring time (flow) End ', monitoringTime.end),
+    useFixedValue('0203', 'Monitoring time (flow) Duration - hr', (monitoringTime.duration)),
+    useFixedValue('0204', 'Flow evaluation Start', flowEvaluationTime.start),
+    useFixedValue('0205', 'Flow evaluation End', flowEvaluationTime.end),
+    useFixedValue('0206', 'Flow evaluation Duration - hr', flowEvaluationTime.duration),
+    useFixedValue('0301', 'Oxygen saturation evaluation Start ', oxygenSaturation.start),
+    useFixedValue('0302', 'Oxygen saturation evaluation End ', oxygenSaturation.end),
+    useFixedValue('0303', 'Oxygen saturation evaluation Duration - hr', oxygenSaturation.duration),
+    useFixedValue('0401', 'Events index REI (AHI)', eventsFields.reiAhi),
+    useFixedValue('0402', 'Events index AI', eventsFields.ai),
+    useFixedValue('0403', 'Events index HI', eventsFields.hi),
+    useFixedValue('0501', 'Supine Time-hr', supineFields.timeHr),
+    useFixedValue('0502', 'Supine Percentage', supineFields.percentage),
+    useFixedValue('0503', 'Supine REI (AHI)', supineFields.reiAhi),
+    useFixedValue('0504', 'Supine AI', supineFields.ai),
+    useFixedValue('0505', 'Supine HI', supineFields.hi),
+    useFixedValue('0601', 'Non-supine Time-hr', nonSupineFields.timeHr),
+    useFixedValue('0602', 'Non-supine Percentage', nonSupineFields.percentage),
+    useFixedValue('0603', 'Non-supine REI (AHI)', nonSupineFields.reiAhi),
+    useFixedValue('0604', 'Non-supine AI', nonSupineFields.ai),
+    useFixedValue('0605', 'Non-supine HI', nonSupineFields.hi),
+    useFixedValue('0701', 'Upright Time-hr', uprightFields.timeHr),
+    useFixedValue('0702', 'Upright Percentage', uprightFields.percentage),
+    useFixedValue('0703', 'Upright REI (AHI)', uprightFields.reiAhi),
+    useFixedValue('0704', 'Upright AI', uprightFields.ai),
+    useFixedValue('0705', 'Upright HI', uprightFields.hi),
+    useFixedValue('0801', 'Events totals Apneas:', eventsTotal.apneas),
+    useFixedValue('0802', 'Events totals Hypopneas:', eventsTotal.hypopneas),
     useFixedValue('0901', 'Apnea Index Obstructive:', apneaIndex.obstructive),
     useFixedValue('0902', 'Apnea Index Central:', apneaIndex.central),
     useFixedValue('0903', 'Apnea Index Mixed:', apneaIndex.mixed),
     useFixedValue('0904', 'Apnea Index Unclassified:', apneaIndex.unclassified),
-    extractItemWithFn('1001', 'Cheyne-Stokes respiration Time - hr: ', mapDuration(cheyneStokesRespiration(labels.TIME_HR))),
-    extractItemWithFn('1002', 'Cheyne-Stokes respiration Percentage', cheyneStokesRespiration(labels.PERCENTAGE)),
-    extractItemWithFn('1101', 'Oxygen desaturation ODI', oxygenDesaturation(labels.ODI)),
-    extractItemWithFn('1102', 'Oxygen desaturation Total', oxygenDesaturation(labels.TOTAL)),
-    extractItemWithFn('1201', 'Oxygen saturation % Baseline', oxygenSaturationPercentage(labels.BASELINE)),
-    extractItemWithFn('1202', 'Oxygen saturation % Avg', oxygenSaturationPercentage(labels.AVERAGE)),
-    extractItemWithFn('1203', 'Oxygen saturation % Lowest', oxygenSaturationPercentage(labels.LOWEST)),
-    extractItemWithFn('1204', 'Oxygen saturation - eval time % <=90%sat', () => oxygenSaturationEevalTimePercentage.lessThan90),
-    extractItemWithFn('1205', 'Oxygen saturation - eval time % <=85%sat:', () => oxygenSaturationEevalTimePercentage.lessThan85),
-    extractItemWithFn('1206', 'Oxygen saturation - eval time % <=80%sat', () => oxygenSaturationEevalTimePercentage.lessThan80),
-    extractItemWithFn('1207', 'Oxygen saturation - eval time % <=88%sat', () => oxygenSaturationEevalTimePercentage.lessThan88),
-    extractItemWithFn('1208', 'Oxygen saturation - eval time % <=88%Time - hr:', () => oxygenSaturationEevalTimePercentage.duration),
-    extractItemWithFn('1301', 'Breaths Total', breaths(labels.TOTAL)),
-    extractItemWithFn('1302', 'Breaths Avg/min', breaths(labels.AVG_PER_MINUTE)),
-    extractItemWithFn('1303', 'Breaths Snores', breaths(labels.SNORES)),
-    extractItemWithFn('1401', 'Pulse - bpm Min', pulseRow(labels.MINIMUM)),
-    extractItemWithFn('1402', 'Pulse - bpm Avg', pulseRow(labels.AVERAGE)),
-    extractItemWithFn('1403', 'Pulse - bpm Max', pulseRow(labels.MAXIMUM)),
+    useFixedValue('1001', 'Cheyne-Stokes respiration Time - hr: ', cheyneStokesRespiration.time),
+    useFixedValue('1002', 'Cheyne-Stokes respiration Percentage', cheyneStokesRespiration.percentage),
+    useFixedValue('1101', 'Oxygen desaturation ODI', oxygenDesaturation.odi),
+    useFixedValue('1102', 'Oxygen desaturation Total', oxygenDesaturation.total),
+    useFixedValue('1201', 'Oxygen saturation % Baseline', oxygenSaturationPercentage.baseline),
+    useFixedValue('1202', 'Oxygen saturation % Avg', oxygenSaturationPercentage.average),
+    useFixedValue('1203', 'Oxygen saturation % Lowest', oxygenSaturationPercentage.lowest),
+    useFixedValue('1204', 'Oxygen saturation - eval time % <=90%sat', oxygenSaturationEevalTimePercentage.lessThan90),
+    useFixedValue('1205', 'Oxygen saturation - eval time % <=85%sat:', oxygenSaturationEevalTimePercentage.lessThan85),
+    useFixedValue('1206', 'Oxygen saturation - eval time % <=80%sat', oxygenSaturationEevalTimePercentage.lessThan80),
+    useFixedValue('1207', 'Oxygen saturation - eval time % <=88%sat', oxygenSaturationEevalTimePercentage.lessThan88),
+    useFixedValue('1208', 'Oxygen saturation - eval time % <=88%Time - hr:', oxygenSaturationEevalTimePercentage.duration),
+    useFixedValue('1301', 'Breaths Total', breaths.total),
+    useFixedValue('1302', 'Breaths Avg/min', breaths.averagePerMinute),
+    useFixedValue('1303', 'Breaths Snores', breaths.snores),
+    useFixedValue('1401', 'Pulse - bpm Min', pulse.min),
+    useFixedValue('1402', 'Pulse - bpm Avg', pulse.average),
+    useFixedValue('1403', 'Pulse - bpm Max', pulse.max),
     extractItemWithFn('1500', 'Analysis guidelines', takeFirstAfter(labels.ANALYSIS_GUIDELINES)),
     extractItemWithFn('1600', 'Adicional data', takeAdditionalData),
     extractItemWithFn('1700', 'Interpretation', takeInterpretation),

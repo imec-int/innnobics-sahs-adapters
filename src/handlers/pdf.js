@@ -77,24 +77,34 @@ const findTextBlockIndex = (label, textBlocks) => textBlocks.findIndex((i) => {
   return value === label || value === `${label}:`;
 });
 
+const isDuration = (s) => /\d:\d\d/.test(s);
+
 const isNumeric = (str) => {
   if (typeof str !== 'string') {
     return false;
   }
 
-  return !Number.isNaN(str) && !Number.isNaN(parseFloat(str));
+  // For some reason node is configured to see hh:mm as valid numbers.
+  // That might be the case in certain scenario's, but it is certainly
+  // not the case in the pdf's we receive.
+  // As a result, we verift explicitely that this is not a duration
+  return !Number.isNaN(str) && !Number.isNaN(parseFloat(str)) && !isDuration(str);
 };
 
-const findFirstXNumbers = (n) => R.reduceWhile((acc) => acc.length < n, (acc, x) => {
+const findFirstXNumbers = R.curry((n, arr) => R.reduceWhile((acc) => acc.length < n, (acc, x) => {
   if (isNumeric(x.str)) {
     return [...acc, x.str];
   }
   return acc;
-}, []);
+}, [], arr));
 
 const findFirstFourNumbers = findFirstXNumbers(4);
+const findFirstThreeNumbers = findFirstXNumbers(3);
 
-const findNextDuration = R.find((item) => /\d:\d\d/.test(item.str));
+const findNextDuration = (index, arr) => {
+  const duration = R.find((item) => isDuration(item.str), R.drop(index, arr));
+  return toDuration(duration?.str);
+};
 
 const takeTitledFieldValue = R.curry((title, items) => {
   const strPropStartsWith = R.pipe(R.prop('str'), R.toLower(), R.startsWith(`${R.toLower(title)}:`));
@@ -137,16 +147,15 @@ const horizontalRowField = (blockTitle, nextBlockTitle) => R.curry((label, items
   return block[label] || block[`${blockTitle} ${label}`];
 });
 
-const startEndDurationBlock = (blockTitle) => {
-  const getStringAtOffset = R.curry((offset, items) => {
-    const i = findTextBlockIndex(blockTitle, items);
-    return i >= 0 ? R.propOr(undefined, 'str', R.nth(i + offset, items)) : undefined;
-  });
+const getNthItemStr = (i, items) => R.propOr(undefined, 'str', R.nth(i, items));
+
+const startEndDurationBlock = (blockTitle, items) => {
+  const i = findTextBlockIndex(blockTitle, items);
 
   return {
-    start: getStringAtOffset(2),
-    end: getStringAtOffset(4),
-    duration: mapDuration(getStringAtOffset(6)),
+    start: i < 0 ? undefined : getNthItemStr(i + 2, items),
+    end: i < 0 ? undefined : getNthItemStr(i + 4, items),
+    duration: i < 0 ? undefined : toDuration(getNthItemStr(i + 6, items)),
   };
 };
 
@@ -155,19 +164,34 @@ const takeFirstAfter = (label) => (items) => {
   return index >= 0 ? R.propOr('', 'str', items[index + 1]).trim() : '';
 };
 
+const findNextNNumbers = R.curry((n, index, arr) => {
+  if (index < 0) {
+    return [undefined] * n;
+  }
+
+  return findFirstXNumbers(n)(R.drop(index, arr));
+});
+
+const findNext4Numbers = findNextNNumbers(4);
+const findNext3Numbers = findNextNNumbers(3);
+const findNext2Numbers = findNextNNumbers(2);
+const findNextNumber = R.pipe(findNextNNumbers(1), R.nth(0));
+
 module.exports = {
   findTextBlockIndex,
-  findFirstFourNumbers,
-  findNextDuration,
   extractTextBlocks,
   takeSecondPartOfString,
   takeTitledFieldValue,
   extractHorizontalFields,
   horizontalRowField,
-  startEndDurationBlock,
-  toDuration,
+  startEndDurationRow: startEndDurationBlock,
   takeFirstAfter,
   concatUntilText,
   takeStr,
   mapDuration,
+  findNextDuration,
+  findNext4Numbers,
+  findNext3Numbers,
+  findNext2Numbers,
+  findNextNumber,
 };
