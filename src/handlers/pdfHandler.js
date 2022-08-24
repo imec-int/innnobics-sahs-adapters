@@ -14,7 +14,7 @@ const {
   findNext2Numbers, findNextNumber, findNext4Numbers, findNext3Numbers,
 } = require('./pdf');
 
-const { determineLanguage, getDictionary } = require('./languages');
+const { determineLanguage, getDictionary } = require('./languages/languages');
 
 const extractItemWithFn = (code, name, valueFn) => (items) => ({
   code,
