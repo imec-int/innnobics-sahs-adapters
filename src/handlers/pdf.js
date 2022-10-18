@@ -47,6 +47,7 @@ const extractTextBlocks = (includedPages) => async (doc) => {
   const validPages = R.intersection(R.range(1, doc.numPages + 1), includedPages);
 
   const pagesContent = await Promise.all(validPages.map((page) => doc.getPage(page)));
+  // const viewPort = await pagesContent[0].getViewport({});
   const textBlocksContent = await Promise.all(pagesContent.map((pc) => pc.getTextContent({
     normalizeWhitespace: false,
     disableCombineTextItems: false,
@@ -187,6 +188,7 @@ module.exports = {
   startEndDurationRow: startEndDurationBlock,
   takeFirstAfter,
   concatUntilText,
+  take,
   takeStr,
   mapDuration,
   findNextDuration,
