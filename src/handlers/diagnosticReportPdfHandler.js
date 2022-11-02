@@ -10,11 +10,12 @@ const logger = require('../tools/logger');
 const {
   findNextDuration,
   startEndDurationRow, concatUntilText,
-  take, takeStr, takeTitledFieldValue, takeFirstAfter, findTextBlockIndex, extractTextBlocks,
+  take, takeTitledFieldValue, takeFirstAfter, findTextBlockIndex, extractTextBlocks,
   findNext2Numbers, findNextNumber, findNext4Numbers, findNext3Numbers,
 } = require('./pdf');
 
 const { determineLanguage, getDictionary } = require('./languages/languages');
+const { genericPdfHandler } = require('./genericPdfHandler');
 
 const extractItemWithFn = (code, name, valueFn) => (items) => ({
   code,
@@ -302,10 +303,6 @@ const validateExtractedData = (result) => {
   return patientId.value ? result : undefined;
 };
 
-function tmpFile() {
-  return path.join(os.tmpdir(), `upload.${crypto.randomBytes(6).readUIntLE(0, 6).toString(36)}.pdf`);
-}
-
 const attachLanguage = (items) => ({ items, language: determineLanguage(items) });
 
 const parseDiagnosticReportPdfFile = (file) => pdfJs.getDocument(file).promise
@@ -315,82 +312,7 @@ const parseDiagnosticReportPdfFile = (file) => pdfJs.getDocument(file).promise
   .then(extractRelevantData)
   .then(validateExtractedData);
 
-function downloadBase64File(req) {
-  const buffer = Buffer.from(req.body.pdf, 'base64');
-  const tempPdfFilePath = tmpFile();
-
-  logger.debug('Saving base64 uploaded pdf file to file path %s', tempPdfFilePath);
-
-  fs.writeFileSync(tempPdfFilePath, buffer);
-  return tempPdfFilePath;
-}
-
-function sendResponse(res) {
-  return function handleData(data) {
-    if (data) {
-      res.send({
-        message: 'Data extracted successfully',
-        data,
-      });
-    } else {
-      res.status(400).send('Unable to extract relevant data');
-    }
-  };
-}
-
-function sendExceptionResponse(res) {
-  return function handleError(err) {
-    logger.error(err);
-    res.status(500).send(err);
-  };
-}
-
-function containsFile(req) {
-  return req.files || req.body?.pdf;
-}
-
-function sendBadRequest(res) {
-  return function send() {
-    res.status(400).json({
-      status: false,
-      message: 'No file uploaded',
-    });
-  };
-}
-
-const handlePdfFilePath = (res) => R.pipe(
-  parseDiagnosticReportPdfFile,
-  R.andThen(sendResponse(res)),
-  R.otherwise(sendExceptionResponse(res)),
-);
-
-const requestDoesNotContainFile = R.complement(containsFile);
-const requestContainsPdfFile = (req) => req.files?.pdf;
-const requestContainsBase64FileBody = (req) => req.body?.pdf;
-
-function handleBase64File(res) {
-  return R.pipe(
-    downloadBase64File,
-    handlePdfFilePath(res),
-  );
-}
-
-const extractPdfFile = (req) => R.path(['files', 'pdf'])(req);
-
-function handlePdfFile(res) {
-  return R.pipe(
-    extractPdfFile,
-    handlePdfFilePath(res),
-  );
-}
-
-const diagnosticReportPdfHandler = async (req, res) => {
-  R.cond([
-    [requestDoesNotContainFile, sendBadRequest(res)],
-    [requestContainsPdfFile, handlePdfFile(res)],
-    [requestContainsBase64FileBody, handleBase64File(res)],
-  ])(req);
-};
+const diagnosticReportPdfHandler = genericPdfHandler(parseDiagnosticReportPdfFile);
 
 module.exports = {
   diagnosticReportPdfHandler, parseDiagnosticReportPdfFile, findDate, findType,
