@@ -3,15 +3,15 @@ const supertest = require('supertest');
 const fileUpload = require('express-fileupload');
 const path = require('path');
 const fs = require('fs');
-const { pdfHandler, findDate } = require('./pdfHandler.js');
-const { findType } = require('./pdfHandler');
+const { diagnosticReportPdfHandler, findDate } = require('./diagnosticReportPdfHandler.js');
+const { findType } = require('./diagnosticReportPdfHandler');
 
-const URL = '/api/pdf';
+const URL = '/api/diagnostic-report';
 const app = express();
 app.use(fileUpload({
   createParentPath: true,
 }));
-app.post(URL, pdfHandler);
+app.post(URL, diagnosticReportPdfHandler);
 
 describe('Not uploading a PDF file', () => {
   it('should return a http status 400', async () => {

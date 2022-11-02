@@ -1,14 +1,14 @@
 const fileUpload = require('express-fileupload');
-const morgan = require('morgan');
 const cors = require('cors');
 const express = require('express');
 const { engine } = require('express-handlebars');
 const path = require('path');
 const swaggerUi = require('swagger-ui-express');
-const { pdfHandler } = require('./handlers/pdfHandler');
+const { diagnosticReportPdfHandler } = require('./handlers/diagnosticReportPdfHandler');
 const homeViewHandler = require('./handlers/homeViewHandler');
 const morganMiddleware = require('./tools/morgan');
 const logger = require('./tools/logger');
+const pdfHandler = require('./handlers/pdfHandler');
 
 /** *****************
  * Express setup
@@ -33,7 +33,8 @@ app.set('views', (path.join(__dirname, './views')));
  * Endpoint
  ****************** */
 
-app.post('/api/pdf', pdfHandler);
+app.post(['/api/pdf'], diagnosticReportPdfHandler); // todo change this so it recognizes the PDF
+app.post(['/api/diagnostic-report'], diagnosticReportPdfHandler);
 
 app.get('/', homeViewHandler.get);
 app.post('/', homeViewHandler.post);

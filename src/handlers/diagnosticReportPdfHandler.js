@@ -308,7 +308,7 @@ function tmpFile() {
 
 const attachLanguage = (items) => ({ items, language: determineLanguage(items) });
 
-const parsePdfFile = (file) => pdfJs.getDocument(file).promise
+const parseDiagnosticReportPdfFile = (file) => pdfJs.getDocument(file).promise
   .then(extractTextBlocks([1, 2]))
   .then(sortItemsLeftToRight)
   .then(attachLanguage)
@@ -359,7 +359,7 @@ function sendBadRequest(res) {
 }
 
 const handlePdfFilePath = (res) => R.pipe(
-  parsePdfFile,
+  parseDiagnosticReportPdfFile,
   R.andThen(sendResponse(res)),
   R.otherwise(sendExceptionResponse(res)),
 );
@@ -384,7 +384,7 @@ function handlePdfFile(res) {
   );
 }
 
-const pdfHandler = async (req, res) => {
+const diagnosticReportPdfHandler = async (req, res) => {
   R.cond([
     [requestDoesNotContainFile, sendBadRequest(res)],
     [requestContainsPdfFile, handlePdfFile(res)],
@@ -393,5 +393,5 @@ const pdfHandler = async (req, res) => {
 };
 
 module.exports = {
-  pdfHandler, parsePdfFile, findDate, findType,
+  diagnosticReportPdfHandler, parseDiagnosticReportPdfFile, findDate, findType,
 };

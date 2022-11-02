@@ -25,6 +25,7 @@ const labels = {
   ANALYSIS_GUIDELINES: 'Orient. análise',
   INTERPRETATION: 'Interpretação',
   PRINTED_ON: 'Impresso em',
+  DIAGNOSTIC_REPORT: 'Relatório de diagnóstico',
 };
 
 module.exports = labels;

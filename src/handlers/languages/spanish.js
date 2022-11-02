@@ -25,6 +25,7 @@ const labels = {
   ANALYSIS_GUIDELINES: 'Criterios análisis',
   INTERPRETATION: 'Interpretation',
   PRINTED_ON: 'Impreso en',
+  DIAGNOSTIC_REPORT: 'Informe de diagnóstico',
 };
 
 module.exports = labels;

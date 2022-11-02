@@ -1,11 +1,11 @@
-const { parsePdfFile } = require('./pdfHandler');
+const { parseDiagnosticReportPdfFile } = require('./diagnosticReportPdfHandler');
 
 const post = (req, res) => {
   if (!req.files) {
     res.status(400);
   } else {
     const { pdf } = req.files;
-    parsePdfFile(pdf).then((data) => {
+    parseDiagnosticReportPdfFile(pdf).then((data) => {
       res.status(200).render('index', { values: data, filename: pdf.name });
     }).catch(() => {
       res.status(500).render('index', { error: 'Something went wrong. Are you sure this is a valid PDF?' });
