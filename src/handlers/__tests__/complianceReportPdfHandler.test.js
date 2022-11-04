@@ -2,6 +2,7 @@ const express = require('express');
 const supertest = require('supertest');
 const fileUpload = require('express-fileupload');
 const path = require('path');
+const fs = require('fs');
 const { complianceReportPdfHandler } = require('../complianceReportPdfHandler');
 
 const URL = '/api/compliance-report';
@@ -81,70 +82,37 @@ describe('Handling an English file', () => {
       expect(entry.value).toBe(value);
     });
   });
-});
 
-//   describe('Sending the file as a BASE64 encoded string', () => {
-//     const SAMPLE_PDF = path.join(__dirname, 'diagnostic-report-english.pdf');
-//     const base64 = fs.readFileSync(SAMPLE_PDF, { encoding: 'base64' });
-//
-//     let response;
-//
-//     beforeAll(async () => {
-//       response = await supertest(app)
-//         .post(URL)
-//         .field('pdf', base64);
-//     });
-//
-//     it('should return a http status 200', async () => {
-//       expect(response.status).toBe(200);
-//     });
-//
-//     test.each(expectedEnglishPdfFieldValues)('should contain the value for code %p', async ({
-//       code,
-//       description,
-//       value,
-//     }) => {
-//       const entry = response.body?.data?.find((e) => e.code === code);
-//
-//       expect(entry).toBeDefined();
-//       expect(entry.code).toBe(code);
-//       expect(entry.name).toBe(description);
-//       expect(entry.value).toBe(value);
-//     });
-//   });
-//
-//   describe('Upload valid, unsigned file', () => {
-//     const UNSIGNED_PDF = path.join(__dirname, 'Diagnostic_report_20220429_041628.pdf');
-//
-//     let unsignedResponse;
-//
-//     beforeAll(async () => {
-//       unsignedResponse = await supertest(app)
-//         .post(URL)
-//         .attach('pdf', UNSIGNED_PDF);
-//     });
-//
-//     const unsignedTestCases = [
-//       { code: '0002', description: 'Type', value: 'Complex, Fieldman' },
-//       { code: '0008', description: 'Recording details', value: '25/07/2013' },
-//       { code: '0201', description: 'Monitoring time (flow) Start ', value: undefined },
-//       { code: '0202', description: 'Monitoring time (flow) End ', value: undefined },
-//       { code: '0203', description: 'Monitoring time (flow) Duration - hr', value: undefined },
-//       { code: '0204', description: 'Flow evaluation Start', value: '10:37pm' },
-//       { code: '0205', description: 'Flow evaluation End', value: '6:08am' },
-//       { code: '0206', description: 'Flow evaluation Duration - hr', value: '06:44' },
-//     ];
-//
-//     test.each(unsignedTestCases)('should contain the value for code %p', ({ code, description, value }) => {
-//       const entry = unsignedResponse.body?.data?.find((e) => e.code === code);
-//
-//       expect(entry).toBeDefined();
-//       expect(entry.code).toBe(code);
-//       expect(entry.name).toBe(description);
-//       expect(entry.value).toBe(value);
-//     });
-//   });
-// });
+  describe('Sending the file as a BASE64 encoded string', () => {
+    const SAMPLE_PDF = path.join(__dirname, 'compliance-report-english.pdf');
+    const base64 = fs.readFileSync(SAMPLE_PDF, { encoding: 'base64' });
+
+    let response;
+
+    beforeAll(async () => {
+      response = await supertest(app)
+        .post(URL)
+        .field('pdf', base64);
+    });
+
+    it('should return a http status 200', async () => {
+      expect(response.status).toBe(200);
+    });
+
+    test.each(expectedEnglishPdfFieldValues)('should contain the value for code %p', async ({
+      code,
+      description,
+      value,
+    }) => {
+      const entry = response.body?.data?.find((e) => e.code === code);
+
+      expect(entry).toBeDefined();
+      expect(entry.code).toBe(code);
+      expect(entry.name).toBe(description);
+      expect(entry.value).toBe(value);
+    });
+  });
+});
 //
 // describe('Handling a Portugese file', () => {
 //   const expectedFieldValues = [
