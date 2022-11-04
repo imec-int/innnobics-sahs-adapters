@@ -52,7 +52,7 @@ function sendResponse(res) {
 
 function sendExceptionResponse(res) {
   return function handleError(err) {
-    logger.error(err);
+    logger.error(JSON.stringify(err));
     res.status(500).send(err);
   };
 }

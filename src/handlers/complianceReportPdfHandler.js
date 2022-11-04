@@ -8,10 +8,9 @@ const {
   findGender,
   takeFirstAfter,
   takeStr, findTitledItem,
-  sortTopToBottom,
-  sortRightToLeft, endsOnSameRightMargin, isBelow, isAbove, sortBottomToTop,
+  endsOnSameRightMargin, isAbove,
 } = require('./pdf');
-const { getDictionary } = require('./languages/complianceReport/languages');
+const { getDictionary, determineLanguage } = require('./languages/complianceReport/languages');
 
 function threeDigitRow(title, items) {
   const labelIndex = items.findIndex((item) => item.str.startsWith(title));
@@ -54,7 +53,9 @@ function takeAge(labels) {
 function findDateRange(labels) {
   return function find(items) {
     const patientIdItem = findTitledItem(labels.PATIENT_ID, items);
-
+    if (!patientIdItem) {
+      return '';
+    }
     return R.pipe(
       R.filter((i) => isAbove(i, patientIdItem) && endsOnSameRightMargin(i, patientIdItem)),
       R.last,
@@ -63,8 +64,8 @@ function findDateRange(labels) {
   };
 }
 
-function extractRelevantData(items) {
-  const dictionary = getDictionary('english');
+function extractRelevantData({ items, language }) {
+  const dictionary = getDictionary(language);
   const { labels } = dictionary;
 
   const therapyPressure = threeDigitRow(labels.THERAPY_PRESSURE, items);
@@ -110,11 +111,15 @@ function extractRelevantData(items) {
   ].map(([code, name, fn]) => ({ code, name, value: fn(items) }));
 }
 
+function attachLanguage(items) {
+  return { items, language: determineLanguage(items) };
+}
+
 function parseComplianceReport(file) {
   return pdfJs.getDocument(file).promise
     .then(extractTextBlocks([1]))
     .then(sortItemsLeftToRight)
-  // .then(attachLanguage)
+    .then(attachLanguage)
     .then(extractRelevantData);
   // .then(validateExtractedData);
 }

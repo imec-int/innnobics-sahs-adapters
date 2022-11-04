@@ -113,124 +113,70 @@ describe('Handling an English file', () => {
     });
   });
 });
-//
-// describe('Handling a Portugese file', () => {
-//   const expectedFieldValues = [
-//     { code: '0001', description: 'Date', value: '26/10/2015' },
-//     { code: '0002', description: 'Type', value: 'Gordon, Suzanne' },
-//     { code: '0003', description: 'Patient ID', value: '' },
-//     { code: '0004', description: 'DOB', value: '04/04/1983' },
-//     { code: '0005', description: 'Age', value: '39' },
-//     { code: '0006', description: 'Gender', value: 'Female' },
-//     { code: '0007', description: 'BMI', value: '27.3' },
-//     { code: '0008', description: 'Recording details', value: '26/10/2015' },
-//     { code: '0009', description: 'Device', value: 'ApneaLink Air' },
-//     { code: '0100', description: 'Recording Start', value: '11:49pm' },
-//     { code: '0101', description: 'Recording End', value: '5:26am' },
-//     { code: '0102', description: 'Recording Duration - hr', value: '05:37' },
-//     { code: '0201', description: 'Monitoring time (flow) Start ', value: '1:37am' },
-//     { code: '0202', description: 'Monitoring time (flow) End ', value: '5:24am' },
-//     { code: '0203', description: 'Monitoring time (flow) Duration - hr', value: '02:51' },
-//     { code: '0204', description: 'Flow evaluation Start', value: undefined },
-//     { code: '0205', description: 'Flow evaluation End', value: undefined },
-//     { code: '0206', description: 'Flow evaluation Duration - hr', value: undefined },
-//     { code: '0301', description: 'Oxygen saturation evaluation Start ', value: '11:59pm' },
-//     { code: '0302', description: 'Oxygen saturation evaluation End ', value: '5:26am' },
-//     { code: '0303', description: 'Oxygen saturation evaluation Duration - hr', value: '05:26' },
-//     { code: '0401', description: 'Events index REI (AHI)', value: '2.4' },
-//     { code: '0402', description: 'Events index AI', value: '0.0' },
-//     { code: '0403', description: 'Events index HI', value: '2.4' },
-//     { code: '0501', description: 'Supine Time-hr', value: '01:04' },
-//     { code: '0502', description: 'Supine Percentage', value: '37.7' },
-//     { code: '0503', description: 'Supine REI (AHI)', value: '1.4' },
-//     { code: '0504', description: 'Supine AI', value: '0.0' },
-//     { code: '0505', description: 'Supine HI', value: '1.4' },
-//     { code: '0601', description: 'Non-supine Time-hr', value: '01:47' },
-//     { code: '0602', description: 'Non-supine Percentage', value: '62.3' },
-//     { code: '0603', description: 'Non-supine REI (AHI)', value: '1.0' },
-//     { code: '0604', description: 'Non-supine AI', value: '0.0' },
-//     { code: '0605', description: 'Non-supine HI', value: '1.0' },
-//     { code: '0701', description: 'Upright Time-hr', value: '00:00' },
-//     { code: '0702', description: 'Upright Percentage', value: '0.0' },
-//     { code: '0703', description: 'Upright REI (AHI)', value: '0.0' },
-//     { code: '0704', description: 'Upright AI', value: '0.0' },
-//     { code: '0705', description: 'Upright HI', value: '0.0' },
-//     { code: '0801', description: 'Events totals Apneas:', value: '0' },
-//     { code: '0802', description: 'Events totals Hypopneas:', value: '7' },
-//     { code: '0901', description: 'Apnea Index Obstructive:', value: '0.0' },
-//     { code: '0902', description: 'Apnea Index Central:', value: '0.0' },
-//     { code: '0903', description: 'Apnea Index Mixed:', value: '0.0' },
-//     { code: '0904', description: 'Apnea Index Unclassified:', value: '0.0' },
-//     { code: '1001', description: 'Cheyne-Stokes respiration Time - hr: ', value: '00:00' },
-//     { code: '1002', description: 'Cheyne-Stokes respiration Percentage', value: '0' },
-//     { code: '1101', description: 'Oxygen desaturation ODI', value: '2.4' },
-//     { code: '1102', description: 'Oxygen desaturation Total', value: '13' },
-//     { code: '1201', description: 'Oxygen saturation % Baseline', value: '95' },
-//     { code: '1202', description: 'Oxygen saturation % Avg', value: '94' },
-//     { code: '1203', description: 'Oxygen saturation % Lowest', value: '80' },
-//     { code: '1204', description: 'Oxygen saturation - eval time % <=90%sat', value: '0' },
-//     { code: '1205', description: 'Oxygen saturation - eval time % <=85%sat:', value: '0' },
-//     { code: '1206', description: 'Oxygen saturation - eval time % <=80%sat', value: '0' },
-//     { code: '1207', description: 'Oxygen saturation - eval time % <=88%sat', value: '0' },
-//     { code: '1208', description: 'Oxygen saturation - eval time % <=88%Time - hr:', value: '00:00' },
-//     { code: '1301', description: 'Breaths Total', value: '2358' },
-//     { code: '1302', description: 'Breaths Avg/min', value: '13.7' },
-//     { code: '1303', description: 'Breaths Snores', value: '65' },
-//     { code: '1401', description: 'Pulse - bpm Min', value: '49' },
-//     { code: '1402', description: 'Pulse - bpm Avg', value: '61' },
-//     { code: '1403', description: 'Pulse - bpm Max', value: '93' },
-//     { code: '1500', description: 'Analysis guidelines', value: 'AASM 2012, Classificação automática' },
-//     {
-//       code: '1600',
-//       description: 'Adicional data',
-//       value: 'Apneia[10%; 10 s; 80 s; 1,0 s; 20%; 60%; 8%]; Hipopneia[70%; 10 s; 100 s; 1,0 s]; '
-//           + 'Ressonar[6,0%; 0,3 s, 3,5 s; 0,5 s]; Dessaturação[3,0%]; CSR[0,5]. Sensor Airflow e sensor de '
-//           + 'esforço respiratório: Transdutor de pressão. As hipopneias foram classificadas apenas se tiver '
-//           + 'havido dados de oximetria válidos.',
-//     },
-//     { code: '1700', description: 'Interpretation', value: 'OK Test positf' },
-//   ];
-//
-//   describe('Sending the file as part of multipart formdata', () => {
-//     const SAMPLE_PDF = path.join(__dirname, 'diagnostic-report-portugese.pdf');
-//
-//     let response;
-//
-//     beforeAll(async () => {
-//       response = await supertest(app)
-//         .post(URL)
-//         .attach('pdf', SAMPLE_PDF);
-//     });
-//
-//     it('should return a http status 200', async () => {
-//       expect(response.status).toBe(200);
-//     });
-//
-//     test.each(expectedFieldValues)('should contain the value for code %p', ({ code, description, value }) => {
-//       const entry = response.body?.data?.find((e) => e.code === code);
-//
-//       expect(entry).toBeDefined();
-//       expect(entry.code).toBe(code);
-//       expect(entry.name).toBe(description);
-//       expect(entry.value).toBe(value);
-//     });
-//   });
-// });
-//
-// describe('Gender should be translated to the english word', () => {
-//   it('should translate portugese', async () => {
-//     const SAMPLE_PDF = path.join(__dirname, 'diagnostic-report-portugese.pdf');
-//     const response = await supertest(app)
-//       .post(URL)
-//       .attach('pdf', SAMPLE_PDF);
-//
-//     const gender = response.body?.data?.find((e) => e.code === '0006');
-//
-//     expect(gender).toBeDefined();
-//     expect(gender.value).toBe('Female');
-//   });
-// });
-//
+
+describe('Handling a Portugese file', () => {
+  const expectedFieldValues = [
+    { code: '1001', description: 'Date', value: '11/09/2022 - 10/10/2022' },
+    { code: '1002', description: 'Patient ID', value: '00772500018' },
+    { code: '1003', description: 'DOB', value: '20/10/1966' },
+    { code: '1004', description: 'Age', value: '55' },
+    { code: '1005', description: 'Gender', value: 'Male' },
+    { code: '1006', description: 'Usage days', value: '21/30 dias (70%)' },
+    { code: '1007', description: '>= 4 hours', value: '2 dias (7%)' },
+    { code: '1008', description: '< 4 hours', value: '19 dias (63%)' },
+    { code: '1009', description: 'Average usage (total days)', value: '2 horas 5 minutos' },
+    { code: '1010', description: 'Average usage (days used)', value: '2 horas 58 minutos' },
+    { code: '1011', description: 'Median usage (days used)', value: '2 horas 55 minutos' },
+    { code: '1012', description: 'Serial number', value: '00772500018' },
+    { code: '1013', description: 'Mode', value: 'AutoSet' },
+    { code: '1014', description: 'Min Pressure', value: '5.2 cmH2O' },
+    { code: '1015', description: 'Max Pressure', value: '20 cmH2O' },
+    { code: '1016', description: 'EPR level', value: '3' },
+    { code: '1017', description: 'Response', value: 'Macio' },
+    { code: '1018', description: 'Pressure -cm H2O - median', value: '9.4' },
+    { code: '1019', description: 'Pressure -cm H2O - percentile 95', value: '10.8' },
+    { code: '1020', description: 'Pressure -cm H2O - max', value: '11.4' },
+    { code: '1021', description: 'Leaks l/min - median', value: '0.0' },
+    { code: '1022', description: 'Leaks l/min - percentile 95', value: '4.3' },
+    { code: '1023', description: 'Leaks l/min - max', value: '24.3' },
+    { code: '1024', description: 'Events per hour - AI', value: '7.5' },
+    { code: '1025', description: 'Events per hour - HI', value: '0.0' },
+    { code: '1026', description: 'Events per hour - AHI', value: '7.5' },
+    { code: '1027', description: 'Apnoea Index - Central', value: '5.7' },
+    { code: '1028', description: 'Apnoea Index - Obstructive', value: '1.4' },
+    { code: '1029', description: 'Apnoea Index - Unknown', value: '0.4' },
+    { code: '1030', description: 'Cheyne-Stokes respiration (average duration per night)', value: '20 minutos (12%)' },
+    { code: '1031', description: 'SpO2% - Time<88%', value: '18 min' },
+    { code: '1032', description: 'SpO2% - Median', value: '92' },
+    { code: '1033', description: 'SpO2% - percentile 95', value: '96' },
+  ];
+
+  describe('Sending the file as part of multipart formdata', () => {
+    const SAMPLE_PDF = path.join(__dirname, 'compliance-report-portuguese.pdf');
+
+    let response;
+
+    beforeAll(async () => {
+      response = await supertest(app)
+        .post(URL)
+        .attach('pdf', SAMPLE_PDF);
+    });
+
+    it('should return a http status 200', async () => {
+      expect(response.status).toBe(200);
+    });
+
+    test.each(expectedFieldValues)('should contain the value for code %p', ({ code, description, value }) => {
+      const entry = response.body?.data?.find((e) => e.code === code);
+
+      expect(entry).toBeDefined();
+      expect(entry.code).toBe(code);
+      expect(entry.name).toBe(description);
+      expect(entry.value).toBe(value);
+    });
+  });
+});
+
 // describe('Uploading a bogus PDF file', () => {
 //   test('should respond with a HTTP status 400', async () => {
 //     // given
