@@ -13,7 +13,7 @@ const {
   findNext3Numbers, sortItemsLeftToRight, findGender,
 } = require('./pdf');
 
-const { determineLanguage, getDictionary } = require('./languages/languages');
+const { determineLanguage, getDictionary } = require('./languages/diagnosticReport/languages');
 const { genericPdfHandler } = require('./genericPdfHandler');
 
 const extractItemWithFn = (code, name, valueFn) => (items) => ({

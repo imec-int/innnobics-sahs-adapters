@@ -1,5 +1,4 @@
-const R = require('ramda');
-const { findTextBlockIndex } = require('../pdf');
+const { findTextBlockIndex } = require('../../pdf');
 
 const ENGLISH = 'english';
 const ENGLISH_LABELS = require('./english');
@@ -48,7 +47,7 @@ const LANGUAGES = [
 const determineLanguage = (textBlocks) => {
   const language = LANGUAGES.find((l) => {
     // search recording details. It is one of those unique values
-    const index = findTextBlockIndex(l.labels.RECORDING_DETAILS, textBlocks);
+    const index = findTextBlockIndex(l.labels.REPORT_TITLE, textBlocks);
     return index >= 0;
   });
 

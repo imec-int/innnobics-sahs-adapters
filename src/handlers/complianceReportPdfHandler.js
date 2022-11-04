@@ -9,7 +9,7 @@ const {
   takeFirstAfter,
   takeStr,
 } = require('./pdf');
-const { getDictionary } = require('./languages/languages');
+const { getDictionary } = require('./languages/complianceReport/languages');
 
 function threeDigitRow(title, items) {
   const labelIndex = items.findIndex((item) => item.str.startsWith(title));
