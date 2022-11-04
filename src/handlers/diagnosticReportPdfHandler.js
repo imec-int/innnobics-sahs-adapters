@@ -1,17 +1,16 @@
 const R = require('ramda');
 
 const pdfJs = require('pdfjs-dist/legacy/build/pdf.js');
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
-const crypto = require('crypto');
 const { sortWith } = require('ramda');
 const logger = require('../tools/logger');
 const {
   findNextDuration,
   startEndDurationRow, concatUntilText,
   take, takeTitledFieldValue, takeFirstAfter, findTextBlockIndex, extractTextBlocks,
-  findNext2Numbers, findNextNumber, findNext4Numbers, findNext3Numbers,
+  findNext2Numbers,
+  findNextNumber,
+  findNext4Numbers,
+  findNext3Numbers, sortItemsLeftToRight, findGender,
 } = require('./pdf');
 
 const { determineLanguage, getDictionary } = require('./languages/languages');
@@ -184,11 +183,6 @@ function findType(items) {
   )(items);
 }
 
-const sortItemsLeftToRight = R.pipe(
-  R.filter((i) => i.height > 0 && i.width > 0),
-  R.sortWith([sortByPage, sortTopToBottom, sortLeftToRight]),
-);
-
 const extractRelevantData = async ({ items, language }) => {
   const dictionary = getDictionary(language);
   logger.info('Handling a %s pdf file', dictionary.name);
@@ -219,8 +213,6 @@ const extractRelevantData = async ({ items, language }) => {
     return concatFn(items);
   };
 
-  const tranlateGender = (value) => dictionary.translateGender(value);
-
   function takeAdditionalData() {
     const analysisGuidelinesIndex = findTextBlockIndex(labels.ANALYSIS_GUIDELINES, items);
     const concatFn = concatUntilEndOfPage(analysisGuidelinesIndex + 2);
@@ -233,7 +225,7 @@ const extractRelevantData = async ({ items, language }) => {
     extractItemWithFn('0003', 'Patient ID', takeTitledFieldValue(labels.PATIENT_ID)),
     extractItemWithFn('0004', 'DOB', takeTitledFieldValue(labels.DOB)),
     extractItemWithFn('0005', 'Age', takeTitledFieldValue(labels.AGE)),
-    extractItemWithFn('0006', 'Gender', R.pipe(takeTitledFieldValue(labels.GENDER), tranlateGender)),
+    extractItemWithFn('0006', 'Gender', findGender(dictionary)),
     extractItemWithFn('0007', 'BMI', takeTitledFieldValue(labels.BMI)),
     extractItemWithFn(RECORDING_DETAILS_CODE, 'Recording details', takeFirstAfter(labels.RECORDING_DETAILS)),
     extractItemWithFn('0009', 'Device', takeFirstAfter(labels.DEVICE)),

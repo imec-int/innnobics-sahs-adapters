@@ -178,6 +178,25 @@ const findNext3Numbers = findNextNNumbers(3);
 const findNext2Numbers = findNextNNumbers(2);
 const findNextNumber = R.pipe(findNextNNumbers(1), R.nth(0));
 
+const sortByPage = (i1, i2) => i1.page - i2.page;
+const sortTopToBottom = (i1, i2) => Math.round(i2.transform[5]) - Math.round(i1.transform[5]);
+const sortLeftToRight = (i1, i2) => i1.transform[4] - i2.transform[4];
+
+const sortItemsLeftToRight = R.pipe(
+  R.filter((i) => i.height > 0 && i.width > 0),
+  R.sortWith([sortByPage, sortTopToBottom, sortLeftToRight]),
+);
+
+function findGender(dictionary) {
+  const { labels } = dictionary;
+  const translateGender = (value) => dictionary.translateGender(value);
+  const title = labels.GENDER;
+
+  return function findInItems(items) {
+    return R.pipe(takeTitledFieldValue(title), translateGender)(items);
+  };
+}
+
 module.exports = {
   findTextBlockIndex,
   extractTextBlocks,
@@ -196,4 +215,6 @@ module.exports = {
   findNext3Numbers,
   findNext2Numbers,
   findNextNumber,
+  sortItemsLeftToRight,
+  findGender,
 };

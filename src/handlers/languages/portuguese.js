@@ -26,6 +26,7 @@ const labels = {
   INTERPRETATION: 'Interpretação',
   PRINTED_ON: 'Impresso em',
   DIAGNOSTIC_REPORT: 'Relatório de diagnóstico',
+  USAGE_DAYS: 'Dias de utilização',
 };
 
 module.exports = labels;
