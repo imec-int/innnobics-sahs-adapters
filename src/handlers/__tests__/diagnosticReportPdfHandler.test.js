@@ -3,8 +3,8 @@ const supertest = require('supertest');
 const fileUpload = require('express-fileupload');
 const path = require('path');
 const fs = require('fs');
-const { diagnosticReportPdfHandler, findDate } = require('./diagnosticReportPdfHandler.js');
-const { findType } = require('./diagnosticReportPdfHandler');
+const { diagnosticReportPdfHandler, findDate } = require('../diagnosticReportPdfHandler.js');
+const { findType } = require('../diagnosticReportPdfHandler');
 
 const URL = '/api/diagnostic-report';
 const app = express();
@@ -101,7 +101,7 @@ describe('Handling an English file', () => {
   ];
 
   describe('Sending the english file as part of multipart formdata', () => {
-    const SAMPLE_PDF = path.join(__dirname, 'report-en.pdf');
+    const SAMPLE_PDF = path.join(__dirname, 'diagnostic-report-english.pdf');
 
     let response;
 
@@ -126,7 +126,7 @@ describe('Handling an English file', () => {
   });
 
   describe('Sending the file as a BASE64 encoded string', () => {
-    const SAMPLE_PDF = path.join(__dirname, 'report-en.pdf');
+    const SAMPLE_PDF = path.join(__dirname, 'diagnostic-report-english.pdf');
     const base64 = fs.readFileSync(SAMPLE_PDF, { encoding: 'base64' });
 
     let response;
@@ -266,7 +266,7 @@ describe('Handling a Portugese file', () => {
   ];
 
   describe('Sending the file as part of multipart formdata', () => {
-    const SAMPLE_PDF = path.join(__dirname, 'report-portugese.pdf');
+    const SAMPLE_PDF = path.join(__dirname, 'diagnostic-report-portugese.pdf');
 
     let response;
 
@@ -293,7 +293,7 @@ describe('Handling a Portugese file', () => {
 
 describe('Gender should be translated to the english word', () => {
   it('should translate portugese', async () => {
-    const SAMPLE_PDF = path.join(__dirname, 'report-portugese.pdf');
+    const SAMPLE_PDF = path.join(__dirname, 'diagnostic-report-portugese.pdf');
     const response = await supertest(app)
       .post(URL)
       .attach('pdf', SAMPLE_PDF);
