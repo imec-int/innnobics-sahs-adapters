@@ -10,7 +10,10 @@ const {
   findNext2Numbers,
   findNextNumber,
   findNext4Numbers,
-  findNext3Numbers, sortItemsLeftToRight, findGender,
+  findNext3Numbers, sortItemsLeftToRight,
+  findGender, sortTopToBottom, endsOnSameRightMargin,
+  sortRightToLeft,
+  isBelow,
 } = require('./pdf');
 
 const { determineLanguage, getDictionary } = require('./languages/diagnosticReport/languages');
@@ -145,11 +148,6 @@ const eventsTotalRow = (title, items) => {
 
 const RECORDING_DETAILS_CODE = '0008';
 
-const sortByPage = (i1, i2) => i1.page - i2.page;
-const sortTopToBottom = (i1, i2) => Math.round(i2.transform[5]) - Math.round(i1.transform[5]);
-const sortLeftToRight = (i1, i2) => i1.transform[4] - i2.transform[4];
-const sortRightToLeft = R.complement(sortLeftToRight);
-
 function findDateItem(items) {
   return R.pipe(
     R.filter(R.propEq('page', 1)),
@@ -163,14 +161,6 @@ function findDate(items) {
     findDateItem,
     R.prop('str'),
   )(items);
-}
-
-function endsOnSameRightMargin(item1, item2) {
-  return Math.abs((item1.transform[4] + item1.width) - (item2.transform[4] + item2.width)) < 1;
-}
-
-function isBelow(item1, item2) {
-  return item1.transform[5] < item2.transform[5] - item2.height;
 }
 
 function findType(items) {

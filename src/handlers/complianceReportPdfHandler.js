@@ -7,7 +7,9 @@ const {
   takeTitledFieldValue,
   findGender,
   takeFirstAfter,
-  takeStr,
+  takeStr, findTitledItem,
+  sortTopToBottom,
+  sortRightToLeft, endsOnSameRightMargin, isBelow, isAbove, sortBottomToTop,
 } = require('./pdf');
 const { getDictionary } = require('./languages/complianceReport/languages');
 
@@ -49,6 +51,18 @@ function takeAge(labels) {
   };
 }
 
+function findDateRange(labels) {
+  return function find(items) {
+    const patientIdItem = findTitledItem(labels.PATIENT_ID, items);
+
+    return R.pipe(
+      R.filter((i) => isAbove(i, patientIdItem) && endsOnSameRightMargin(i, patientIdItem)),
+      R.last,
+      R.prop('str'),
+    )(items);
+  };
+}
+
 function extractRelevantData(items) {
   const dictionary = getDictionary('english');
   const { labels } = dictionary;
@@ -60,7 +74,7 @@ function extractRelevantData(items) {
   const spo2Row = takeSpo2Row(labels, items);
 
   return [
-    ['1001', 'Date', takeStr(5)], // TODO change accessing on the fifth items. It changes from file to file
+    ['1001', 'Date', findDateRange(labels)],
     ['1002', 'Patient ID', takeTitledFieldValue(labels.PATIENT_ID)],
     ['1003', 'DOB', takeTitledFieldValue(labels.DOB)],
     ['1004', 'Age', takeAge(labels)],
@@ -98,7 +112,7 @@ function extractRelevantData(items) {
 
 function parseComplianceReport(file) {
   return pdfJs.getDocument(file).promise
-    .then(extractTextBlocks([1, 2]))
+    .then(extractTextBlocks([1]))
     .then(sortItemsLeftToRight)
   // .then(attachLanguage)
     .then(extractRelevantData);
