@@ -50,7 +50,7 @@ function takeAge(labels) {
   };
 }
 
-function findDateRange(labels) {
+function takeDateRange(labels) {
   return function find(items) {
     const patientIdItem = findTitledItem(labels.PATIENT_ID, items);
     if (!patientIdItem) {
@@ -68,15 +68,21 @@ function extractRelevantData({ items, language }) {
   const dictionary = getDictionary(language);
   const { labels } = dictionary;
 
+  const takePatientId = takeTitledFieldValue(labels.PATIENT_ID);
+  const patientId = takePatientId(items);
+  if (!patientId) {
+    return undefined;
+  }
+
   const therapyPressure = threeDigitRow(labels.THERAPY_PRESSURE, items);
   const therapyLeaks = threeDigitRow(labels.THERAPY_LEAKS, items);
   const eventsPerHour = threeDigitRow(labels.THERAPY_EVENTS_PER_HOUR, items);
   const apnoeaIndex = threeDigitRow(labels.THERAPY_APNOEA_INDEX, items);
-  const spo2Row = takeSpo2Row(labels, items);
 
+  const spo2Row = takeSpo2Row(labels, items);
   return [
-    ['1001', 'Date', findDateRange(labels)],
-    ['1002', 'Patient ID', takeTitledFieldValue(labels.PATIENT_ID)],
+    ['1001', 'Date', takeDateRange(labels)],
+    ['1002', 'Patient ID', takePatientId],
     ['1003', 'DOB', takeTitledFieldValue(labels.DOB)],
     ['1004', 'Age', takeAge(labels)],
     ['1005', 'Gender', findGender(dictionary)],
