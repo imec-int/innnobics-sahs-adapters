@@ -1,3 +1,4 @@
+const R = require('ramda');
 const { findTextBlockIndex } = require('../../pdf');
 
 const ENGLISH = 'english';
@@ -26,11 +27,24 @@ const LANGUAGES = [
     name: ENGLISH,
     labels: ENGLISH_LABELS,
     translateGender: genderTranslator({ male: 'male', female: 'female' }),
+    translateDaysLabel: function _translate(s) {
+      return s;
+    },
   },
   {
     name: PORTUGUESE,
     labels: PORTUGESE_LABELS,
     translateGender: genderTranslator({ male: 'masculino', female: 'feminino' }),
+    translateDaysLabel: function _translate(s) {
+      return R.pipe(
+        R.replace(/dias/ig, 'days'),
+        R.replace(/dia/ig, 'day'),
+        R.replace(/horas/ig, 'hours'),
+        R.replace(/hora/ig, 'hour'),
+        R.replace(/minutos/ig, 'minutes'),
+        R.replace(/minuto/ig, 'minute'),
+      )(s);
+    },
   },
   {
     name: SPANISH,

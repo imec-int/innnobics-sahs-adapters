@@ -64,10 +64,15 @@ function takeDateRange(labels) {
   };
 }
 
+const takeDaysLabel = R.curry((dictionary, label, items) => {
+  const value = takeFirstAfter(label)(items);
+  return dictionary.translateDaysLabel(value);
+});
+
 function extractRelevantData({ items, language }) {
   const dictionary = getDictionary(language);
   const { labels } = dictionary;
-
+  const takeDaysItem = takeDaysLabel(dictionary);
   const takePatientId = takeTitledFieldValue(labels.PATIENT_ID);
   const patientId = takePatientId(items);
   if (!patientId) {
@@ -80,18 +85,19 @@ function extractRelevantData({ items, language }) {
   const apnoeaIndex = threeDigitRow(labels.THERAPY_APNOEA_INDEX, items);
 
   const spo2Row = takeSpo2Row(labels, items);
+
   return [
     ['1001', 'Date', takeDateRange(labels)],
     ['1002', 'Patient ID', takePatientId],
     ['1003', 'DOB', takeTitledFieldValue(labels.DOB)],
     ['1004', 'Age', takeAge(labels)],
     ['1005', 'Gender', findGender(dictionary)],
-    ['1006', 'Usage days', takeFirstAfter(labels.USAGE_DAYS)],
-    ['1007', '>= 4 hours', takeFirstAfter(labels.USAGE_DAYS_GTE_4_HOURS)],
-    ['1008', '< 4 hours', takeFirstAfter(labels.USAGE_DAYS_LT_4_HOURS)],
-    ['1009', 'Average usage (total days)', takeFirstAfter(labels.AVERAGE_USAGE_TOTAL_DAYS)],
-    ['1010', 'Average usage (days used)', takeFirstAfter(labels.AVERAGE_USAGE_DAYS_USED)],
-    ['1011', 'Median usage (days used)', takeFirstAfter(labels.MEDIAN_USAGE_DAYS_USED)],
+    ['1006', 'Usage days', takeDaysItem(labels.USAGE_DAYS)],
+    ['1007', '>= 4 hours', takeDaysItem(labels.USAGE_DAYS_GTE_4_HOURS)],
+    ['1008', '< 4 hours', takeDaysItem(labels.USAGE_DAYS_LT_4_HOURS)],
+    ['1009', 'Average usage (total days)', takeDaysItem(labels.AVERAGE_USAGE_TOTAL_DAYS)],
+    ['1010', 'Average usage (days used)', takeDaysItem(labels.AVERAGE_USAGE_DAYS_USED)],
+    ['1011', 'Median usage (days used)', takeDaysItem(labels.MEDIAN_USAGE_DAYS_USED)],
     ['1012', 'Serial number', takeFirstAfter(labels.AIRSENSE_10_SERIAL_NUMBER)],
     ['1013', 'Mode', takeFirstAfter(labels.AIRSENSE_10_MODE)],
     ['1014', 'Min Pressure', takeFirstAfter(labels.AIRSENSE_10_MIN_PRESSURE)],
@@ -110,7 +116,7 @@ function extractRelevantData({ items, language }) {
     ['1027', 'Apnoea Index - Central', apnoeaIndex[0]],
     ['1028', 'Apnoea Index - Obstructive', apnoeaIndex[1]],
     ['1029', 'Apnoea Index - Unknown', apnoeaIndex[2]],
-    ['1030', 'Cheyne-Stokes respiration (average duration per night)', takeFirstAfter(labels.THERAPY_CHEYNE_STOKES_RESPIRATION)],
+    ['1030', 'Cheyne-Stokes respiration (average duration per night)', takeDaysItem(labels.THERAPY_CHEYNE_STOKES_RESPIRATION)],
     ['1031', 'SpO2% - Time<88%', spo2Row.time],
     ['1032', 'SpO2% - Median', spo2Row.median],
     ['1033', 'SpO2% - percentile 95', spo2Row.fiftyNinthPercentile],
