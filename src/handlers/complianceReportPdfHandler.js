@@ -158,4 +158,5 @@ const complianceReportPdfHandler = genericPdfHandler(parseComplianceReport);
 
 module.exports = {
   complianceReportPdfHandler,
+  parseComplianceReport,
 };

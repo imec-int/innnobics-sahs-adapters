@@ -71,3 +71,5 @@ nvm use
 npm install
 npm run dev
 ```
+
+The website is available on `http://localhost:8080/`, the API on `http://localhost:8080/`

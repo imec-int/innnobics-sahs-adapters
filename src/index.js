@@ -8,7 +8,6 @@ const { diagnosticReportPdfHandler } = require('./handlers/diagnosticReportPdfHa
 const homeViewHandler = require('./handlers/homeViewHandler');
 const morganMiddleware = require('./tools/morgan');
 const logger = require('./tools/logger');
-const pdfHandler = require('./handlers/pdfHandler');
 
 /** *****************
  * Express setup
