@@ -60,7 +60,7 @@
       "post": {
         "summary": "Parses a diagnostic report PDF and returns the extracted relevant data",
         "description": "",
-        "operationId": "uploadPdf",
+        "operationId": "uploadDiagnosticReportPdf",
         "consumes": [
           "multipart/form-data"
         ],

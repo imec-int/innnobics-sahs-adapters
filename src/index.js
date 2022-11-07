@@ -8,6 +8,7 @@ const { diagnosticReportPdfHandler } = require('./handlers/diagnosticReportPdfHa
 const homeViewHandler = require('./handlers/homeViewHandler');
 const morganMiddleware = require('./tools/morgan');
 const logger = require('./tools/logger');
+const { complianceReportPdfHandler } = require('./handlers/complianceReportPdfHandler');
 
 /** *****************
  * Express setup
@@ -32,8 +33,9 @@ app.set('views', (path.join(__dirname, './views')));
  * Endpoint
  ****************** */
 
-app.post(['/api/pdf'], diagnosticReportPdfHandler); // todo change this so it recognizes the PDF
+app.post(['/api/pdf'], diagnosticReportPdfHandler);
 app.post(['/api/diagnostic-report'], diagnosticReportPdfHandler);
+app.post(['/api/compliance-report'], complianceReportPdfHandler);
 
 app.get('/', homeViewHandler.get);
 app.post('/', homeViewHandler.post);
