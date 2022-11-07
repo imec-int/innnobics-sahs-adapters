@@ -168,9 +168,13 @@ const startEndDurationBlock = (blockTitle, items) => {
   };
 };
 
+function takeFirstAfterIndex(index, items) {
+  return index >= 0 ? R.propOr('', 'str', items[index + 1]).trim() : '';
+}
+
 const takeFirstAfter = (label) => (items) => {
   const index = findTextBlockIndex(label, items);
-  return index >= 0 ? R.propOr('', 'str', items[index + 1]).trim() : '';
+  return takeFirstAfterIndex(index, items);
 };
 
 const findNextNNumbers = R.curry((n, index, arr) => {
@@ -227,6 +231,7 @@ module.exports = {
   horizontalRowField,
   startEndDurationRow: startEndDurationBlock,
   takeFirstAfter,
+  takeFirstAfterIndex,
   concatUntilText,
   take,
   takeStr,

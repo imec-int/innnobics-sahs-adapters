@@ -8,7 +8,7 @@ const {
   findGender,
   takeFirstAfter,
   takeStr, findTitledItem,
-  endsOnSameRightMargin, isAbove,
+  endsOnSameRightMargin, isAbove, takeFirstAfterIndex,
 } = require('./pdf');
 const { getDictionary, determineLanguage } = require('./languages/complianceReport/languages');
 
@@ -69,10 +69,28 @@ const takeDaysLabel = R.curry((dictionary, label, items) => {
   return dictionary.translateDaysLabel(value);
 });
 
+const equalsCaseInsensitive = R.curry((label, item) => item.str.trim().toLowerCase().startsWith(label.trim().toLowerCase()));
+
+function findCheyneStokesRespiration(dictionary) {
+  const { labels } = dictionary;
+
+  return function find(items) {
+    const label = labels.THERAPY_CHEYNE_STOKES_RESPIRATION;
+    const cheyneStokesItem = items.findIndex(equalsCaseInsensitive(label));
+    if (cheyneStokesItem >= 0) {
+      const value = takeFirstAfterIndex(cheyneStokesItem, items);
+      return dictionary.translateDaysLabel(value);
+    }
+
+    return undefined;
+  };
+}
+
 function extractRelevantData({ items, language }) {
   const dictionary = getDictionary(language);
   const { labels } = dictionary;
   const takeDaysItem = takeDaysLabel(dictionary);
+
   const takePatientId = takeTitledFieldValue(labels.PATIENT_ID);
   const patientId = takePatientId(items);
   if (!patientId) {
@@ -116,7 +134,7 @@ function extractRelevantData({ items, language }) {
     ['1027', 'Apnoea Index - Central', apnoeaIndex[0]],
     ['1028', 'Apnoea Index - Obstructive', apnoeaIndex[1]],
     ['1029', 'Apnoea Index - Unknown', apnoeaIndex[2]],
-    ['1030', 'Cheyne-Stokes respiration (average duration per night)', takeDaysItem(labels.THERAPY_CHEYNE_STOKES_RESPIRATION)],
+    ['1030', 'Cheyne-Stokes respiration (average duration per night)', findCheyneStokesRespiration(dictionary)],
     ['1031', 'SpO2% - Time<88%', spo2Row.time],
     ['1032', 'SpO2% - Median', spo2Row.median],
     ['1033', 'SpO2% - percentile 95', spo2Row.fiftyNinthPercentile],

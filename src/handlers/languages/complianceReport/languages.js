@@ -50,6 +50,16 @@ const LANGUAGES = [
     name: SPANISH,
     labels: SPANISH_LABELS,
     translateGender: genderTranslator({ male: 'hombre', female: 'mujer' }),
+    translateDaysLabel: function _translate(s) {
+      return R.pipe(
+        R.replace(/días/ig, 'days'),
+        R.replace(/día/ig, 'day'),
+        R.replace(/horas/ig, 'hours'),
+        R.replace(/hora/ig, 'hour'),
+        R.replace(/minutos/ig, 'minutes'),
+        R.replace(/minuto/ig, 'minute'),
+      )(s);
+    },
   },
   {
     name: CATALAN,
