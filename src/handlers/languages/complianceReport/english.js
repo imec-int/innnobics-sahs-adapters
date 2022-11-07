@@ -20,7 +20,7 @@ const labels = {
   THERAPY_LEAKS: 'Leaks - L/min',
   THERAPY_EVENTS_PER_HOUR: 'Events per hour',
   THERAPY_APNOEA_INDEX: 'Apnoea Index',
-  THERAPY_CHEYNE_STOKES_RESPIRATION: 'Cheyne-Stokes respiration (average duration per night)',
+  THERAPY_CHEYNE_STOKES_RESPIRATION: 'Cheyne-Stokes respiration',
   THERAPY_SPO2_PERCENTAGE_TIME: 'Time < 88%',
   THERAPY_SPO2_MEDIAN: 'Median',
   THERAPY_SPO2_FIFTY_NINTH_PERCENTILE: '95th %',

@@ -20,7 +20,7 @@ const labels = {
   THERAPY_LEAKS: 'Fugas — l/min',
   THERAPY_EVENTS_PER_HOUR: 'Eventos por hora',
   THERAPY_APNOEA_INDEX: 'Índice de apneia',
-  THERAPY_CHEYNE_STOKES_RESPIRATION: 'Respiração Cheyne-Stokes (duração média por noite)',
+  THERAPY_CHEYNE_STOKES_RESPIRATION: 'Respiração Cheyne-Stokes',
   THERAPY_SPO2_PERCENTAGE_TIME: 'Tempo < 88%',
   THERAPY_SPO2_MEDIAN: 'Mediana',
   THERAPY_SPO2_FIFTY_NINTH_PERCENTILE: '% 95.º',
