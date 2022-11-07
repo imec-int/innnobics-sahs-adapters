@@ -10,9 +10,6 @@ const PORTUGESE_LABELS = require('./portuguese');
 const SPANISH = 'spanish';
 const SPANISH_LABELS = require('./spanish');
 
-const CATALAN = 'catalan';
-const CATALAN_LABELS = require('./catalan');
-
 const genderTranslator = (dict) => (str) => {
   if (str?.toLowerCase().includes(dict.female)) {
     return 'Female';
@@ -60,11 +57,6 @@ const LANGUAGES = [
         R.replace(/minuto/ig, 'minute'),
       )(s);
     },
-  },
-  {
-    name: CATALAN,
-    labels: CATALAN_LABELS,
-    translateGender: genderTranslator({ male: 'hombre', female: 'mujer' }),
   },
 ];
 
