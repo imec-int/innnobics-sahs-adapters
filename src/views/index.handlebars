@@ -1,18 +1,46 @@
 <div class="container">
     {{#if error }}
-    <div class="alert alert-danger show" role="alert">
-        {{error}}
-    </div>
+        <div class="alert alert-danger show" role="alert">
+            {{error}}
+        </div>
     {{/if}}
+
+    <h2>Diagnostic report</h2>
 
     <form action="/" method="POST" enctype="multipart/form-data">
         <div class="mb-3">
-            <label for="formFile" class="form-label">Resmed PDF file:</label>
+            <label for="formFile" class="form-label">Type of file:</label>
+        </div>
+
+        <div class="mb-3">
+            <div class="radio">
+                <label>
+                    <input type="radio" name="typeOfReport" id="typeOfReport1" value="diagnosticReport" checked>
+                    Diagnostic
+                    report
+                </label>
+            </div>
+            <div class="radio">
+                <label class="radio">
+                    <input type="radio" name="typeOfReport" id="typeOfReport2" value="complianceReport"> Compliance
+                    report
+                </label>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="formFile" class="form-label">PDF file:</label>
             <input required class="form-control" type="file" id="pdf" name="pdf">
         </div>
 
         <button type="submit" class="btn btn-primary">Submit</button>
     </form>
+    {{#if error }}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            Something went wrong while parsing {{ filename }}: {{error}}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {{/if }}
     {{#if values.length }}
         <hr>
 

@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "description": "This is a API that extracts relevant data from a ResMed Airview generated PDF file. See https://www.resmed.com.au/healthcare-professionals/products/monitoring-and-data-management/airview-patient-management-system for more information about AirView",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "title": "Innobics-Sahs adapters",
     "contact": {
       "email": "koen.ongena@imec.be"
@@ -20,7 +20,8 @@
   "paths": {
     "/api/pdf": {
       "post": {
-        "summary": "Uploads a PDF and returns the extracted relevant data",
+        "deprecated": true,
+        "summary": "Parses a diagnostic report PDF and returns the extracted relevant data. @deprecated Please use /api/diagnostic-report. This endpoint will be removed version 3.0",
         "description": "",
         "operationId": "uploadPdf",
         "consumes": [
@@ -54,6 +55,81 @@
         },
         "security": []
       }
+    },
+    "/api/diagnostic-report/" : {
+      "post": {
+        "summary": "Parses a diagnostic report PDF and returns the extracted relevant data",
+        "description": "",
+        "operationId": "uploadDiagnosticReportPdf",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "pdf",
+            "in": "formData",
+            "description": "PDF file to parse. This can be sent as a binary file, or as a base64 encoded string",
+            "required": true,
+            "type": "file"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/PdfParseResponse"
+            }
+          },
+          "500": {
+            "description": "Internal server error."
+          },
+          "400": {
+            "description": "The service is not able to parse the PDF. Possible reasons: a corrupt or invalid PDF was uploaded. A file is also considered invalid, if the pdf does not contain a patient ID (or the patient ID could not be found)."
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/compliance-report/" : {
+      "post": {
+        "summary": "Parses a compliance report PDF and returns the extracted relevant data",
+        "description": "",
+        "operationId": "uploadComplianceReport",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "pdf",
+            "in": "formData",
+            "description": "PDF file to parse. This can be sent as a binary file, or as a base64 encoded string",
+            "required": true,
+            "type": "file"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/PdfParseResponse"
+            }
+          },
+          "500": {
+            "description": "Internal server error."
+          },
+          "400": {
+            "description": "The service is not able to parse the PDF. Possible reasons: a corrupt or invalid PDF was uploaded. A file is also considered invalid, if the pdf does not contain a patient ID (or the patient ID could not be found)."
+          }
+        },
+        "security": []
+      }
+
     }
   },
   "definitions": {

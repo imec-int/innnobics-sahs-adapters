@@ -3,14 +3,15 @@ const supertest = require('supertest');
 const fileUpload = require('express-fileupload');
 const path = require('path');
 const fs = require('fs');
-const { pdfHandler } = require('./pdfHandler.js');
+const { diagnosticReportPdfHandler, findDate } = require('../diagnosticReportPdfHandler.js');
+const { findType } = require('../diagnosticReportPdfHandler');
 
-const URL = '/api/pdf';
+const URL = '/api/diagnostic-report';
 const app = express();
 app.use(fileUpload({
   createParentPath: true,
 }));
-app.post(URL, pdfHandler);
+app.post(URL, diagnosticReportPdfHandler);
 
 describe('Not uploading a PDF file', () => {
   it('should return a http status 400', async () => {
@@ -100,7 +101,7 @@ describe('Handling an English file', () => {
   ];
 
   describe('Sending the english file as part of multipart formdata', () => {
-    const SAMPLE_PDF = path.join(__dirname, 'report-en.pdf');
+    const SAMPLE_PDF = path.join(__dirname, 'diagnostic-report-english.pdf');
 
     let response;
 
@@ -125,7 +126,7 @@ describe('Handling an English file', () => {
   });
 
   describe('Sending the file as a BASE64 encoded string', () => {
-    const SAMPLE_PDF = path.join(__dirname, 'report-en.pdf');
+    const SAMPLE_PDF = path.join(__dirname, 'diagnostic-report-english.pdf');
     const base64 = fs.readFileSync(SAMPLE_PDF, { encoding: 'base64' });
 
     let response;
@@ -265,7 +266,7 @@ describe('Handling a Portugese file', () => {
   ];
 
   describe('Sending the file as part of multipart formdata', () => {
-    const SAMPLE_PDF = path.join(__dirname, 'report-portugese.pdf');
+    const SAMPLE_PDF = path.join(__dirname, 'diagnostic-report-portugese.pdf');
 
     let response;
 
@@ -292,7 +293,7 @@ describe('Handling a Portugese file', () => {
 
 describe('Gender should be translated to the english word', () => {
   it('should translate portugese', async () => {
-    const SAMPLE_PDF = path.join(__dirname, 'report-portugese.pdf');
+    const SAMPLE_PDF = path.join(__dirname, 'diagnostic-report-portugese.pdf');
     const response = await supertest(app)
       .post(URL)
       .attach('pdf', SAMPLE_PDF);
@@ -316,5 +317,266 @@ describe('Uploading a bogus PDF file', () => {
 
     // then
     expect(response.status).toBe(400);
+  });
+});
+
+describe('Find specific fields on PDF', () => {
+  const sortedItems = [
+    {
+      str: '25/07/2013',
+      dir: 'ltr',
+      width: 59.510000000000005,
+      height: 11,
+      transform: [
+        11,
+        0,
+        0,
+        11,
+        470.49,
+        754.6,
+      ],
+      fontName: 'g_d0_f1',
+      hasEOL: true,
+      page: 1,
+    },
+    {
+      str: 'Physician Practice',
+      dir: 'ltr',
+      width: 49.104,
+      height: 6,
+      transform: [
+        6,
+        0,
+        0,
+        6,
+        130,
+        750.67,
+      ],
+      fontName: 'g_d0_f2',
+      hasEOL: true,
+      page: 1,
+    },
+    {
+      str: '7166 Time Tunnel',
+      dir: 'ltr',
+      width: 48.60600000000001,
+      height: 6,
+      transform: [
+        6,
+        0,
+        0,
+        6,
+        130,
+        742.23,
+      ],
+      fontName: 'g_d0_f2',
+      hasEOL: true,
+      page: 1,
+    },
+    {
+      str: 'Complex, Hunter',
+      dir: 'ltr',
+      width: 87.10900000000002,
+      height: 11,
+      transform: [
+        11,
+        0,
+        0,
+        11,
+        442.89,
+        737.54,
+      ],
+      fontName: 'g_d0_f1',
+      hasEOL: false,
+      page: 1,
+    },
+    {
+      str: 'Portchester, Ain 73501',
+      dir: 'ltr',
+      width: 62.022000000000034,
+      height: 6,
+      transform: [
+        6,
+        0,
+        0,
+        6,
+        130,
+        733.78,
+      ],
+      fontName: 'g_d0_f2',
+      hasEOL: true,
+      page: 1,
+    },
+    {
+      str: 'Phone: 547-504-3958',
+      dir: 'ltr',
+      width: 59.96400000000001,
+      height: 6,
+      transform: [
+        6,
+        0,
+        0,
+        6,
+        130,
+        705.67,
+      ],
+      fontName: 'g_d0_f2',
+      hasEOL: true,
+      page: 1,
+    },
+    {
+      str: 'Patient ID: 123455',
+      dir: 'ltr',
+      width: 74.64599999999997,
+      height: 9,
+      transform: [
+        9,
+        0,
+        0,
+        9,
+        455.35,
+        703.51,
+      ],
+      fontName: 'g_d0_f2',
+      hasEOL: true,
+      page: 1,
+    },
+    {
+      str: 'Fax: (487)901-9561',
+      dir: 'ltr',
+      width: 52.81200000000001,
+      height: 6,
+      transform: [
+        6,
+        0,
+        0,
+        6,
+        130,
+        697.23,
+      ],
+      fontName: 'g_d0_f2',
+      hasEOL: true,
+      page: 1,
+    },
+    {
+      str: 'DOB: 15/12/1922',
+      dir: 'ltr',
+      width: 70.47899999999998,
+      height: 9,
+      transform: [
+        9,
+        0,
+        0,
+        9,
+        459.52,
+        690.84,
+      ],
+      fontName: 'g_d0_f2',
+      hasEOL: true,
+      page: 1,
+    },
+    {
+      str: 'Email: admin@primary.com',
+      dir: 'ltr',
+      width: 73.476,
+      height: 6,
+      transform: [
+        6,
+        0,
+        0,
+        6,
+        130,
+        688.78,
+      ],
+      fontName: 'g_d0_f2',
+      hasEOL: false,
+      page: 1,
+    },
+    {
+      str: 'Age: 99',
+      dir: 'ltr',
+      width: 30.626999999999995,
+      height: 9,
+      transform: [
+        9,
+        0,
+        0,
+        9,
+        499.37,
+        678.17,
+      ],
+      fontName: 'g_d0_f2',
+      hasEOL: true,
+      page: 1,
+    },
+    {
+      str: 'Gender: Male',
+      dir: 'ltr',
+      width: 53.75699999999999,
+      height: 9,
+      transform: [
+        9,
+        0,
+        0,
+        9,
+        476.24,
+        665.5,
+      ],
+      fontName: 'g_d0_f2',
+      hasEOL: true,
+      page: 1,
+    },
+    {
+      str: 'BMI: 24.2',
+      dir: 'ltr',
+      width: 38.00700000000005,
+      height: 9,
+      transform: [
+        9,
+        0,
+        0,
+        9,
+        491.99,
+        652.83,
+      ],
+      fontName: 'g_d0_f2',
+      hasEOL: false,
+      page: 1,
+    },
+    {
+      str: 'Diagnostic Report',
+      dir: 'ltr',
+      width: 143.874,
+      height: 18,
+      transform: [
+        18,
+        0,
+        0,
+        18,
+        130,
+        630.02,
+      ],
+      fontName: 'g_d0_f2',
+      hasEOL: false,
+      page: 1,
+    },
+  ];
+
+  it('should find the date in the top right corner', () => {
+    // given items sorted by page, left to right, top to bottom
+    // when looking for the date
+    const result = findDate(sortedItems);
+
+    // expect it to match
+    expect(result).toEqual('25/07/2013');
+  });
+
+  it('should find the type in the top right corner below the date', () => {
+    // given items sorted by page, left to right, top to bottom
+    // when looking for the date
+    const result = findType(sortedItems);
+
+    // expect it to match
+    expect(result).toEqual('Complex, Hunter');
   });
 });

@@ -1,20 +1,23 @@
 const R = require('ramda');
 
 const pdfJs = require('pdfjs-dist/legacy/build/pdf.js');
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
-const crypto = require('crypto');
-const { min } = require('ramda');
+const { sortWith } = require('ramda');
 const logger = require('../tools/logger');
 const {
   findNextDuration,
-  startEndDurationRow, horizontalRowField, concatUntilText,
-  takeStr, takeTitledFieldValue, takeFirstAfter, findTextBlockIndex, extractTextBlocks,
-  findNext2Numbers, findNextNumber, findNext4Numbers, findNext3Numbers,
+  startEndDurationRow, concatUntilText,
+  take, takeTitledFieldValue, takeFirstAfter, findTextBlockIndex, extractTextBlocks,
+  findNext2Numbers,
+  findNextNumber,
+  findNext4Numbers,
+  findNext3Numbers, sortItemsLeftToRight,
+  findGender, sortTopToBottom, endsOnSameRightMargin,
+  sortRightToLeft,
+  isBelow,
 } = require('./pdf');
 
-const { determineLanguage, getDictionary } = require('./languages/languages');
+const { determineLanguage, getDictionary } = require('./languages/diagnosticReport/languages');
+const { genericPdfHandler } = require('./genericPdfHandler');
 
 const extractItemWithFn = (code, name, valueFn) => (items) => ({
   code,
@@ -145,59 +148,74 @@ const eventsTotalRow = (title, items) => {
 
 const RECORDING_DETAILS_CODE = '0008';
 
-const extractRelevantData = async ({ items: unsortedItems, language }) => {
+function findDateItem(items) {
+  return R.pipe(
+    R.filter(R.propEq('page', 1)),
+    sortWith([sortTopToBottom, sortRightToLeft]),
+    take(0),
+  )(items);
+}
+
+function findDate(items) {
+  return R.pipe(
+    findDateItem,
+    R.prop('str'),
+  )(items);
+}
+
+function findType(items) {
+  const dateItem = findDateItem(items);
+  return R.pipe(
+    R.filter(R.propEq('page', 1)),
+    R.sortWith([sortTopToBottom, sortRightToLeft]),
+    R.find((i) => endsOnSameRightMargin(i, dateItem) && isBelow(i, dateItem)),
+    R.prop('str'),
+  )(items);
+}
+
+const extractRelevantData = async ({ items, language }) => {
   const dictionary = getDictionary(language);
   logger.info('Handling a %s pdf file', dictionary.name);
 
-  const sortByPage = (i1, i2) => i2.page - i1.page;
-  const sortTopToBottom = (i1, i2) => Math.round(i2.transform[5]) - Math.round(i1.transform[5]);
-  const sortLeftToRight = (i1, i2) => i1.transform[4] - i2.transform[4];
-
-  const visibleItems = R.filter((i) => i.height > 0 && i.width > 0, unsortedItems);
-
-  const sortedItems = R.sortWith([sortByPage, sortTopToBottom, sortLeftToRight], visibleItems);
-
   const { labels } = dictionary;
-  const recording = startEndDurationRow(labels.RECORDING, sortedItems);
-  const monitoringTime = startEndDurationRow(labels.MONITORING_TIME_FLOW, sortedItems);
-  const flowEvaluationTime = startEndDurationRow(labels.FLOW_EVALUATION, sortedItems);
-  const oxygenSaturation = startEndDurationRow(labels.OXYGEN_SATURATION_EVALUATION, sortedItems);
-  const eventsFields = eventsRow(labels.EVENTS_INDEX, sortedItems);
-  const supineFields = supineRow(labels.SUPINE, sortedItems);
-  const nonSupineFields = nonSupineRow(labels.NON_SUPINE, sortedItems);
-  const uprightFields = uprightRow(labels.UPRIGHT, sortedItems);
-  const eventsTotal = eventsTotalRow(labels.EVENTS_TOTAL, sortedItems);
-  const apneaIndex = apneaIndexRow(labels.APNEA_INDEX, sortedItems);
-  const cheyneStokesRespiration = cheyneStokesRespirationRow(labels.CHEYNE_STOKES, sortedItems);
-  const oxygenDesaturation = oxygenDesaturationRow(labels.OXYGEN_DESATURATION, sortedItems);
-  const oxygenSaturationPercentage = oxygenSaturationPercentageRow(labels.OXYGEN_SATURATION_PERCENTAGE, sortedItems);
-  const oxygenSaturationEevalTimePercentage = oxygenSaturationEevalTimePercentageRow(labels.OXYGEN_SATURATION_EVAL_TIME_PERCENTAGE, sortedItems);
-  const breaths = breathsRow(labels.BREATHS, sortedItems);
-  const pulse = pulseRow(labels.PULSE_BPM, sortedItems);
+  const recording = startEndDurationRow(labels.RECORDING, items);
+  const monitoringTime = startEndDurationRow(labels.MONITORING_TIME_FLOW, items);
+  const flowEvaluationTime = startEndDurationRow(labels.FLOW_EVALUATION, items);
+  const oxygenSaturation = startEndDurationRow(labels.OXYGEN_SATURATION_EVALUATION, items);
+  const eventsFields = eventsRow(labels.EVENTS_INDEX, items);
+  const supineFields = supineRow(labels.SUPINE, items);
+  const nonSupineFields = nonSupineRow(labels.NON_SUPINE, items);
+  const uprightFields = uprightRow(labels.UPRIGHT, items);
+  const eventsTotal = eventsTotalRow(labels.EVENTS_TOTAL, items);
+  const apneaIndex = apneaIndexRow(labels.APNEA_INDEX, items);
+  const cheyneStokesRespiration = cheyneStokesRespirationRow(labels.CHEYNE_STOKES, items);
+  const oxygenDesaturation = oxygenDesaturationRow(labels.OXYGEN_DESATURATION, items);
+  const oxygenSaturationPercentage = oxygenSaturationPercentageRow(labels.OXYGEN_SATURATION_PERCENTAGE, items);
+  const oxygenSaturationEevalTimePercentage = oxygenSaturationEevalTimePercentageRow(labels.OXYGEN_SATURATION_EVAL_TIME_PERCENTAGE, items);
+  const breaths = breathsRow(labels.BREATHS, items);
+  const pulse = pulseRow(labels.PULSE_BPM, items);
 
   const concatUntilEndOfPage = concatUntilText(labels.PRINTED_ON);
 
-  const takeInterpretation = (items) => {
+  const takeInterpretation = () => {
     const interpretationIndex = findTextBlockIndex(labels.INTERPRETATION, items);
     const concatFn = concatUntilEndOfPage(interpretationIndex + 1);
     return concatFn(items);
   };
 
-  const tranlateGender = (value) => dictionary.translateGender(value);
-
-  function takeAdditionalData(items) {
+  function takeAdditionalData() {
     const analysisGuidelinesIndex = findTextBlockIndex(labels.ANALYSIS_GUIDELINES, items);
     const concatFn = concatUntilEndOfPage(analysisGuidelinesIndex + 2);
     return concatFn(items);
   }
 
   return [
-    extractItemWithFn('0001', 'Date', takeStr(0)),
-    extractItemWithFn('0002', 'Type', takeStr(1)),
+    extractItemWithFn('0001', 'Date', findDate),
+    extractItemWithFn('0002', 'Type', findType),
     extractItemWithFn('0003', 'Patient ID', takeTitledFieldValue(labels.PATIENT_ID)),
     extractItemWithFn('0004', 'DOB', takeTitledFieldValue(labels.DOB)),
     extractItemWithFn('0005', 'Age', takeTitledFieldValue(labels.AGE)),
-    extractItemWithFn('0006', 'Gender', R.pipe(takeTitledFieldValue(labels.GENDER), tranlateGender)),
+    extractItemWithFn('0006', 'Gender', findGender(dictionary)),
     extractItemWithFn('0007', 'BMI', takeTitledFieldValue(labels.BMI)),
     extractItemWithFn(RECORDING_DETAILS_CODE, 'Recording details', takeFirstAfter(labels.RECORDING_DETAILS)),
     extractItemWithFn('0009', 'Device', takeFirstAfter(labels.DEVICE)),
@@ -258,7 +276,7 @@ const extractRelevantData = async ({ items: unsortedItems, language }) => {
     extractItemWithFn('1500', 'Analysis guidelines', takeFirstAfter(labels.ANALYSIS_GUIDELINES)),
     extractItemWithFn('1600', 'Adicional data', takeAdditionalData),
     extractItemWithFn('1700', 'Interpretation', takeInterpretation),
-  ].map((fn) => fn(visibleItems));
+  ].map((fn) => fn(items));
 };
 
 const validateExtractedData = (result) => {
@@ -267,53 +285,17 @@ const validateExtractedData = (result) => {
   return patientId.value ? result : undefined;
 };
 
-function tmpFile() {
-  return path.join(os.tmpdir(), `upload.${crypto.randomBytes(6).readUIntLE(0, 6).toString(36)}.pdf`);
-}
-
 const attachLanguage = (items) => ({ items, language: determineLanguage(items) });
 
-const parsePdfFile = (file) => pdfJs.getDocument(file).promise
+const parseDiagnosticReportPdfFile = (file) => pdfJs.getDocument(file).promise
   .then(extractTextBlocks([1, 2]))
+  .then(sortItemsLeftToRight)
   .then(attachLanguage)
   .then(extractRelevantData)
   .then(validateExtractedData);
 
-const extractFile = (req) => {
-  if (req.files?.pdf) {
-    return req.files.pdf;
-  }
+const diagnosticReportPdfHandler = genericPdfHandler(parseDiagnosticReportPdfFile);
 
-  const buffer = Buffer.from(req.body.pdf, 'base64');
-  const tempPdfFilePath = tmpFile();
-
-  logger.debug('Saving base64 uploaded pdf file to file path %s', tempPdfFilePath);
-
-  fs.writeFileSync(tempPdfFilePath, buffer);
-  return tempPdfFilePath;
+module.exports = {
+  diagnosticReportPdfHandler, parseDiagnosticReportPdfFile, findDate, findType,
 };
-
-const pdfHandler = async (req, res) => {
-  if (!req.files && !req.body?.pdf) {
-    res.status(400).json({
-      status: false,
-      message: 'No file uploaded',
-    });
-  } else {
-    parsePdfFile(extractFile(req)).then((data) => {
-      if (data) {
-        res.send({
-          message: 'Data extracted successfully',
-          data,
-        });
-      } else {
-        res.status(400).send('Unable to extract relevant data');
-      }
-    }).catch((err) => {
-      logger.error(err);
-      res.status(500).send(err);
-    });
-  }
-};
-
-module.exports = { pdfHandler, parsePdfFile };

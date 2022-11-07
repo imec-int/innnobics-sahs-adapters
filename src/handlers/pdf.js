@@ -47,6 +47,7 @@ const extractTextBlocks = (includedPages) => async (doc) => {
   const validPages = R.intersection(R.range(1, doc.numPages + 1), includedPages);
 
   const pagesContent = await Promise.all(validPages.map((page) => doc.getPage(page)));
+  // const viewPort = await pagesContent[0].getViewport({});
   const textBlocksContent = await Promise.all(pagesContent.map((pc) => pc.getTextContent({
     normalizeWhitespace: false,
     disableCombineTextItems: false,
@@ -98,18 +99,26 @@ const findFirstXNumbers = R.curry((n, arr) => R.reduceWhile((acc) => acc.length 
   return acc;
 }, [], arr));
 
-const findFirstFourNumbers = findFirstXNumbers(4);
-const findFirstThreeNumbers = findFirstXNumbers(3);
-
 const findNextDuration = (index, arr) => {
   const duration = R.find((item) => isDuration(item.str), R.drop(index, arr));
   return toDuration(duration?.str);
 };
 
-const takeTitledFieldValue = R.curry((title, items) => {
+function findTitledItemIndex(title, items) {
+  const strPropStartsWith = R.pipe(R.prop('str'), R.toLower(), R.startsWith(`${R.toLower(title)}:`));
+
+  return R.findIndex(strPropStartsWith, items);
+}
+
+function findTitledItem(title, items) {
   const strPropStartsWith = R.pipe(R.prop('str'), R.toLower(), R.startsWith(`${R.toLower(title)}:`));
 
   const index = R.findIndex(strPropStartsWith, items);
+  return index >= 0 ? items[index] : undefined;
+}
+
+const takeTitledFieldValue = R.curry((title, items) => {
+  const index = findTitledItemIndex(title, items);
   return takeSecondPartOfString(index)(items);
 });
 
@@ -159,9 +168,13 @@ const startEndDurationBlock = (blockTitle, items) => {
   };
 };
 
+function takeFirstAfterIndex(index, items) {
+  return index >= 0 ? R.propOr('', 'str', items[index + 1]).trim() : '';
+}
+
 const takeFirstAfter = (label) => (items) => {
   const index = findTextBlockIndex(label, items);
-  return index >= 0 ? R.propOr('', 'str', items[index + 1]).trim() : '';
+  return takeFirstAfterIndex(index, items);
 };
 
 const findNextNNumbers = R.curry((n, index, arr) => {
@@ -177,6 +190,38 @@ const findNext3Numbers = findNextNNumbers(3);
 const findNext2Numbers = findNextNNumbers(2);
 const findNextNumber = R.pipe(findNextNNumbers(1), R.nth(0));
 
+const sortByPage = (i1, i2) => i1.page - i2.page;
+const sortTopToBottom = (i1, i2) => Math.round(i2.transform[5]) - Math.round(i1.transform[5]);
+const sortLeftToRight = (i1, i2) => i1.transform[4] - i2.transform[4];
+const sortRightToLeft = R.complement(sortLeftToRight);
+
+const sortItemsLeftToRight = R.pipe(
+  R.filter((i) => i.height > 0 && i.width > 0),
+  R.sortWith([sortByPage, sortTopToBottom, sortLeftToRight]),
+);
+
+function findGender(dictionary) {
+  const { labels } = dictionary;
+  const translateGender = (value) => dictionary.translateGender(value);
+  const title = labels.GENDER;
+
+  return function findInItems(items) {
+    return R.pipe(takeTitledFieldValue(title), translateGender)(items);
+  };
+}
+
+function endsOnSameRightMargin(item1, item2) {
+  return Math.abs((item1.transform[4] + item1.width) - (item2.transform[4] + item2.width)) < 1;
+}
+
+function isBelow(item1, item2) {
+  return item1.transform[5] < item2.transform[5] - item2.height;
+}
+
+function isAbove(item1, item2) {
+  return item1.transform[5] > item2.transform[5];
+}
+
 module.exports = {
   findTextBlockIndex,
   extractTextBlocks,
@@ -186,7 +231,9 @@ module.exports = {
   horizontalRowField,
   startEndDurationRow: startEndDurationBlock,
   takeFirstAfter,
+  takeFirstAfterIndex,
   concatUntilText,
+  take,
   takeStr,
   mapDuration,
   findNextDuration,
@@ -194,4 +241,13 @@ module.exports = {
   findNext3Numbers,
   findNext2Numbers,
   findNextNumber,
+  sortItemsLeftToRight,
+  sortLeftToRight,
+  sortRightToLeft,
+  sortTopToBottom,
+  findGender,
+  findTitledItem,
+  endsOnSameRightMargin,
+  isBelow,
+  isAbove,
 };

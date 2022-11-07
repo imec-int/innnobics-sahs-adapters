@@ -24,7 +24,9 @@ const labels = {
   PULSE_BPM: 'Pulso - rpm',
   ANALYSIS_GUIDELINES: 'Criterios análisis',
   INTERPRETATION: 'Interpretation',
-  PRINTED_ON: 'Printed on',
+  PRINTED_ON: 'Impreso en',
+  DIAGNOSTIC_REPORT: 'Informe de diagnóstico',
+  USAGE_DAYS: 'Días de Uso',
 };
 
 module.exports = labels;

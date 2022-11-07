@@ -1,5 +1,5 @@
 const R = require('ramda');
-const { findTextBlockIndex } = require('../pdf');
+const { findTextBlockIndex } = require('../../pdf');
 
 const ENGLISH = 'english';
 const ENGLISH_LABELS = require('./english');
@@ -9,9 +9,6 @@ const PORTUGESE_LABELS = require('./portuguese');
 
 const SPANISH = 'spanish';
 const SPANISH_LABELS = require('./spanish');
-
-const CATALAN = 'catalan';
-const CATALAN_LABELS = require('./catalan');
 
 const genderTranslator = (dict) => (str) => {
   if (str?.toLowerCase().includes(dict.female)) {
@@ -27,28 +24,46 @@ const LANGUAGES = [
     name: ENGLISH,
     labels: ENGLISH_LABELS,
     translateGender: genderTranslator({ male: 'male', female: 'female' }),
+    translateDaysLabel: function _translate(s) {
+      return s;
+    },
   },
   {
     name: PORTUGUESE,
     labels: PORTUGESE_LABELS,
     translateGender: genderTranslator({ male: 'masculino', female: 'feminino' }),
+    translateDaysLabel: function _translate(s) {
+      return R.pipe(
+        R.replace(/dias/ig, 'days'),
+        R.replace(/dia/ig, 'day'),
+        R.replace(/horas/ig, 'hours'),
+        R.replace(/hora/ig, 'hour'),
+        R.replace(/minutos/ig, 'minutes'),
+        R.replace(/minuto/ig, 'minute'),
+      )(s);
+    },
   },
   {
     name: SPANISH,
     labels: SPANISH_LABELS,
     translateGender: genderTranslator({ male: 'hombre', female: 'mujer' }),
-  },
-  {
-    name: CATALAN,
-    labels: CATALAN_LABELS,
-    translateGender: genderTranslator({ male: 'hombre', female: 'mujer' }),
+    translateDaysLabel: function _translate(s) {
+      return R.pipe(
+        R.replace(/días/ig, 'days'),
+        R.replace(/día/ig, 'day'),
+        R.replace(/horas/ig, 'hours'),
+        R.replace(/hora/ig, 'hour'),
+        R.replace(/minutos/ig, 'minutes'),
+        R.replace(/minuto/ig, 'minute'),
+      )(s);
+    },
   },
 ];
 
 const determineLanguage = (textBlocks) => {
   const language = LANGUAGES.find((l) => {
     // search recording details. It is one of those unique values
-    const index = findTextBlockIndex(l.labels.RECORDING_DETAILS, textBlocks);
+    const index = findTextBlockIndex(l.labels.REPORT_TITLE, textBlocks);
     return index >= 0;
   });
 
